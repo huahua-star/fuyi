@@ -2,7 +2,7 @@ package TTCEPackage;
 
 public class K7X0Util {
     static K7X0 Reader=new K7X0();
-    static int ComHandle;
+    public static int ComHandle;
     static byte MacAddr = 0x00;
     static byte[] RecvBuf=new byte[300];
     static int[] length=new int[2];
@@ -192,6 +192,37 @@ public class K7X0Util {
     }
 
     /**
+     * 发送到读卡位置
+     * @param comHandle
+     */
+    public static int sendToReadToReturn(Integer comHandle){
+        Boolean flag = true;
+        if(!open(comHandle)){
+            System.out.println("发卡器串口打开失败+=========>com:"+comHandle);
+            return 1;
+        }
+        while (flag){
+            RecvBuf[0] = 0x46;//F
+            RecvBuf[1] = 0x43;//C
+            RecvBuf[2] = 0x37;//7
+            Reader.SendCmd(ComHandle, MacAddr,RecvBuf, 3);
+            System.out.println("检测读卡位置");
+            flag = !check(3,0x33);
+            System.out.println("while:"+flag);
+            Reader.sleep(1000);
+        }
+        System.out.println("发送到读卡位置成功");
+        flag = check(3,0x33);
+        System.out.println("flag:"+flag);
+        if (flag){
+            return 0;
+        }else{
+            return 2;
+        }
+    }
+
+
+    /**
      * 发卡到取卡位置
      * @return
      */
@@ -250,7 +281,7 @@ public class K7X0Util {
     /**
      * 发卡到取卡位置--命令DC
      */
-    private static void send(){
+    public static void send(){
         RecvBuf[0] = 0x44;//D
         RecvBuf[1] = 0x43;//C
         Reader.SendCmd(ComHandle, MacAddr,RecvBuf, 2);//发卡到取卡位置--DC
@@ -259,7 +290,7 @@ public class K7X0Util {
     /**
      * 复位--命令RS
      */
-    private static void reset(){
+    public static void reset(){
         RecvBuf[0] = 0x52;//R
         RecvBuf[1] = 0x53;//S
         Reader.SendCmd(ComHandle, MacAddr, RecvBuf, 2);//复位--RS
@@ -331,7 +362,7 @@ public class K7X0Util {
      * 关闭串口
      * @param comHandle
      */
-    private static void colse(int comHandle) {
+    public static void colse(int comHandle) {
         int commClose = Reader.CommClose(comHandle);
         if(commClose != 0){
             System.out.println("遇到错误发卡机串口 --》关闭失败");

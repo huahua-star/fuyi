@@ -1,14 +1,23 @@
 package org.jeecg.modules.zzj.controller;
 
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.formula.functions.T;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.aspect.annotation.AutoLog;
 import org.jeecg.common.constant.CommonConstant;
 import org.jeecg.common.system.api.ISysBaseAPI;
+import org.jeecg.modules.zzj.entity.OperationRecord;
+import org.jeecg.modules.zzj.entity.Reservation;
+import org.jeecg.modules.zzj.service.OperationRecordService;
+import org.jeecg.modules.zzj.service.ReservationService;
 import org.jeecg.modules.zzj.util.Card.SetResultUtil;
 import org.jeecg.modules.zzj.util.Http.HttpUtil;
 import org.jeecg.modules.zzj.util.SignUtils;
@@ -22,9 +31,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.net.InetAddress;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @Slf4j
 @Api(tags = "富驿接口")
@@ -44,8 +53,48 @@ public class FuYiController {
     @Value("${fuyiaddress}")
     private String fuyiaddress;
 
+
+    @Autowired
+    private OperationRecordService operationRecordService;
+
     @Autowired
     private ISysBaseAPI sysBaseAPI;
+
+    @Autowired
+    private ReservationService reservationService;
+
+
+    /**
+     * 订单留存测试
+     */
+    @ApiOperation(value = "订单留存测试",httpMethod = "POST")
+    @RequestMapping(value = "/testSave", method = RequestMethod.POST)
+    public Result<Object> testSave(){
+        Result<Object> result = new Result<Object>();
+        Reservation reservation=reservationService.getOne(new QueryWrapper<Reservation>().eq("Confirm_no","B2286912"));
+        String sendPost=JSONObject.toJSONString(reservation);
+        String url="http://192.168.11.1:8099/jeecg-boot/Reservation/fuyiResSaveOrUpdate";
+        String returnResult= HttpUtil.sendPosts(url,sendPost);
+        System.out.println("returnResult:"+returnResult);
+        return SetResultUtil.setSuccessResult(result,"成功");
+    }
+
+    /**
+     * 订单留存测试
+     */
+    @ApiOperation(value = "操作记录留存测试",httpMethod = "POST")
+    @RequestMapping(value = "/testOperationRecord", method = RequestMethod.POST)
+    public Result<Object> testOperationRecord(){
+        Result<Object> result = new Result<Object>();
+        OperationRecord operationRecord=operationRecordService.getById("1156e7e36898e6a173feddfdb2bbfeb1");
+        String sendPost=JSONObject.toJSONString(operationRecord);
+        String url="http://192.168.11.1:8099/jeecg-boot/Reservation/fuyiOperationSaveOrUpdate";
+        String returnResult= HttpUtil.sendPosts(url,sendPost);
+        System.out.println("returnResult:"+returnResult);
+        return SetResultUtil.setSuccessResult(result,"成功");
+    }
+
+
 
     /**
      * 获取ticketId
@@ -67,6 +116,21 @@ public class FuYiController {
         return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
     }
 
+    @RequestMapping(value = "/testSaveOper", method = RequestMethod.GET)
+    @ApiOperation(value = "testSaveOper", httpMethod = "GET")
+    public Result testSaveOper() {
+        String ConfirmNo="123";
+        OperationRecord operationRecord=new OperationRecord();
+        operationRecord.setName("123");
+        operationRecord.setCreateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+        operationRecord.setOperation("CREATE");
+        operationRecord.setOperationDes("订单确认号为:"+ConfirmNo+"姓名为:"+operationRecord.getName()+"的客人，在"+operationRecord.getCreateTime()+"在自助机生成了一个订单。");
+        operationRecord.setResno(ConfirmNo);
+        operationRecordService.save(operationRecord);
+
+        return Result.ok("123");
+    }
+
 
 
     /**
@@ -84,8 +148,8 @@ public class FuYiController {
         Result<JSONObject> result = new Result<JSONObject>();
         String nowDate=new Date().getTime()+"";
         Map<String,String> map=getMap(nowDate);
-        map.put("MobileNo",MobileNo);
-        map.put("Password",Password);
+        map.put("MobileNo",mobileNo);
+        map.put("Password",password);
         String param= HttpUtil.getMapToString(map);
         System.out.println("param:"+param);
         String url=fuyiaddress+"/api/Membership/MemberLogin";
@@ -94,17 +158,6 @@ public class FuYiController {
         System.out.println(jsonObj);
         return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
     }
-
-
-
-
-
-
-
-
-
-
-
 
     /**
      * 获取房价代码销售条件
@@ -249,7 +302,24 @@ public class FuYiController {
         String returnResult= HttpUtil.sendPost(url,param,map,nowDate);
         JSONObject jsonObj = JSONObject.parseObject(returnResult);
         System.out.println(jsonObj);
-        return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
+        String fuyiResult=jsonObj.getString("result");
+        String data=jsonObj.getString("data");
+        System.out.println("data:"+data);
+        if ("true".equals(fuyiResult) && null!=data && data.length()>2){
+
+            String ConfirmNo=jsonObj.getJSONObject("data").getString("ConfirmNo");
+            OperationRecord operationRecord=new OperationRecord();
+            operationRecord.setName(GuestName);
+            operationRecord.setCreateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+            operationRecord.setOperation("CREATE");
+            operationRecord.setOperationDes("订单确认号为:"+ConfirmNo+"，姓名为:"+GuestName+"的客人，在"+operationRecord.getCreateTime()+",在自助机生成订单。");
+            operationRecord.setResno(ConfirmNo);
+            operationRecordService.save(operationRecord);
+
+            return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
+        }else{
+            return SetResultUtil.setErrorMsgResult(result,"失败",jsonObj);
+        }
     }
 
 
@@ -266,10 +336,10 @@ public class FuYiController {
      */
     @RequestMapping(value = "/GetRoomStatusByHotelNoOnSaleRestriction", method = RequestMethod.GET)
     @ApiOperation(value = "查询房价", httpMethod = "GET")
-    public Result<JSONObject> GetRoomStatusByHotelNoOnSaleRestriction(String CheckInDate,String CheckOutDate,String MemberType,
+    public Result<Object> GetRoomStatusByHotelNoOnSaleRestriction(String CheckInDate,String CheckOutDate,String MemberType,
                                                                       String RoomTypeCode,String RateTypeCode,String PromotionCode) throws Exception {
         log.info("GetRoomStatusByHotelNoOnSaleRestriction()方法");
-        Result<JSONObject> result = new Result<JSONObject>();
+        Result<Object> result = new Result<Object>();
         String nowDate=new Date().getTime()+"";
         Map<String,String> map=getMap(nowDate);
         map.put("HotelNo",HotelNo);
@@ -285,7 +355,30 @@ public class FuYiController {
         String returnResult= HttpUtil.sendGet(url,param,map,nowDate);
         JSONObject jsonObj = JSONObject.parseObject(returnResult);
         System.out.println(jsonObj);
-        return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
+        String fuyiResult=jsonObj.getString("result");
+        String data=jsonObj.getString("data");
+        System.out.println("data:"+data);
+        JSONArray newJsonArray=new JSONArray();
+        if ("true".equals(fuyiResult) && null!=data && data.length()>2){
+            JSONObject jsonData=jsonObj.getJSONObject("data");
+            JSONArray array=jsonData.getJSONArray("RoomListsale");
+            System.out.println(array.size());
+            for (int i=0;i<array.size();i++){
+                JSONObject jo=array.getJSONObject(i);
+                if("CLK".equals(jo.getString("RoomTypeNo")) || "CLT".equals(jo.getString("RoomTypeNo"))){
+                    newJsonArray.add(jo);
+                }
+            }
+            array.removeAll(newJsonArray);
+            newJsonArray.addAll(array);
+            jsonData.remove("RoomListsale");
+            jsonData.put("RoomListsale",newJsonArray);
+            jsonObj.remove("data");
+            jsonObj.put("data",jsonData);
+            return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
+        }else{
+            return SetResultUtil.setErrorMsgResult(result,"失败，无符合要求的房型");
+        }
     }
 
     /**
@@ -408,7 +501,6 @@ public class FuYiController {
         String fuyiResult=jsonObj.getString("result");
         String data=jsonObj.getString("data");
         System.out.println("data:"+data);
-        System.out.println("dataSize:"+data.length());
         if ("true".equals(fuyiResult) && null!=data && data.length()>2){
             return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
         }else{
@@ -416,6 +508,34 @@ public class FuYiController {
         }
 
     }
+    @RequestMapping(value = "/getOneReservation", method = RequestMethod.GET)
+    @ApiOperation(value = "查询订单", httpMethod = "GET")
+    public List<Reservation> getOneReservation(String ConfirmNo, String ResStates) throws Exception {
+        log.info("getOneReservation()方法");
+        Result<JSONObject> result = new Result<JSONObject>();
+        String nowDate=new Date().getTime()+"";
+        Map<String,String> map=getMap(nowDate);
+        map.put("HotelNo",HotelNo);
+        map.put("ConfirmNo",ConfirmNo);
+        map.put("ResStates",ResStates);
+        String param= HttpUtil.getMapToString(map);
+        System.out.println("param:"+param);
+        String url=fuyiaddress+"/api/Reservation/SSMForQueryReservation";
+        String returnResult= HttpUtil.sendGet(url,param,map,nowDate);
+        JSONObject jsonObj = JSONObject.parseObject(returnResult);
+        System.out.println(jsonObj);
+        String fuyiResult=jsonObj.getString("result");
+        String data=jsonObj.getString("data");
+        System.out.println("data:"+data);
+        if ("true".equals(fuyiResult) && null!=data && data.length()>2){
+            JSONArray items=jsonObj.getJSONArray("data");
+            List<Reservation> list= JSON.parseObject(items.toJSONString(), new TypeReference<List<Reservation>>() {});
+            return list;
+        }else{
+            return null;
+        }
+    }
+
 
     @RequestMapping(value = "/GetQueryAvailableRoom", method = RequestMethod.GET)
     @ApiOperation(value = "可用房号查询", httpMethod = "GET")
@@ -495,7 +615,7 @@ public class FuYiController {
     @ApiOperation(value = "修改订单预定", httpMethod = "GET")
     public Result<JSONObject> EditReservation(String RoomTypeNo,String RoomNo,String ResID,String Gender,String GuestEmail,String GuestMebCardNo,
                                            String GuestName,String GuestAddress,String DocumentNo,String DocumentType,String AdultsCount,
-                                           String ChildrenCount,String ConfirmNo,String GuestTel) throws Exception {
+                                           String ChildrenCount,String ConfirmNo,String BookerTel) throws Exception {
         log.info("EditReservation()方法");
         Result<JSONObject> result = new Result<JSONObject>();
         String nowDate=new Date().getTime()+"";
@@ -514,7 +634,7 @@ public class FuYiController {
         map.put("AdultsCount",AdultsCount);
         map.put("ChildrenCount",ChildrenCount);
         map.put("ConfirmNo",ConfirmNo);
-        map.put("GuestTel",GuestTel);
+        map.put("BookerTel",BookerTel);
         String param= HttpUtil.getMapToString(map);
         System.out.println("param:"+param);
         String url=fuyiaddress+"/api/Reservation/EditReservation";
@@ -567,7 +687,11 @@ public class FuYiController {
      */
     @RequestMapping(value = "/CheckIn", method = RequestMethod.GET)
     @ApiOperation(value = "入住", httpMethod = "GET")
-    public Result<JSONObject> CheckIn(String confirmNo,String roomNo,String documentType,String documentNo,String sourceArea) throws Exception {
+    public Result<JSONObject> CheckIn(String confirmNo,String roomNo,
+                                      String documentType,String documentNo,
+                                      String sourceArea,String Gender,
+                                      String Birthday,String Address,String Nation,
+                                      String Nationality,String EnFamilyName,String EnFirstName,String GuestName) throws Exception {
         log.info("CheckIn()方法");
         Result<JSONObject> result = new Result<JSONObject>();
         String nowDate=new Date().getTime()+"";
@@ -578,13 +702,49 @@ public class FuYiController {
         map.put("documentType",documentType);
         map.put("documentNo",documentNo);
         map.put("sourceArea",sourceArea);
+
+        map.put("Gender",Gender);
+        map.put("Birthday",Birthday);
+        map.put("Address",Address);
+        map.put("Nation",Nation);
+        map.put("Nationality",Nationality);
+        map.put("EnFamilyName",EnFamilyName);
+        map.put("EnFirstName",EnFirstName);
+        map.put("GuestName",GuestName);
+
         String param= HttpUtil.getMapToString(map);
         System.out.println("param:"+param);
         String url=fuyiaddress+"/api/Reservation/CheckIn";
         String returnResult= HttpUtil.sendGet(url,param,map,nowDate);
         JSONObject jsonObj = JSONObject.parseObject(returnResult);
         System.out.println(jsonObj);
-        return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
+        String fuyiResult=jsonObj.getString("result");
+        String data=jsonObj.getString("data");
+        System.out.println("data:"+data);
+        if ("true".equals(fuyiResult) && null!=data && data.length()>2){
+            List<Reservation> list=getOneReservation(confirmNo,"I");// 获取订单 入住 状态
+            for (Reservation reservation : list){
+                reservation.setArrivalBizDate(reservation.getArrivalBizDate().replace("T"," "));
+                reservation.setDepartBizDate(reservation.getDepartBizDate().replace("T"," "));
+                reservation.setArrivalTime(reservation.getArrivalTime().replace("T"," "));
+                reservation.setCreateTime(reservation.getCreateTime().replace("T"," "));
+                reservation.setDepartTime(reservation.getDepartTime().replace("T"," "));
+                reservation.setIsActionTime(reservation.getIsActionTime().replace("T"," "));
+            }
+            reservationService.saveBatch(list);
+
+            OperationRecord operationRecord=new OperationRecord();
+            operationRecord.setName(EnFamilyName+EnFirstName);
+            operationRecord.setCreateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+            operationRecord.setOperation("CHECKIN");
+            operationRecord.setOperationDes("订单确认号为:"+confirmNo+"，姓名为:"+operationRecord.getName()+"的客人，在"+operationRecord.getCreateTime()+"在自助机办理入住。");
+            operationRecord.setResno(confirmNo);
+            operationRecordService.save(operationRecord);
+
+            return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
+        }else{
+            return SetResultUtil.setErrorMsgResult(result,"失败",jsonObj);
+        }
     }
 
 
@@ -687,6 +847,38 @@ public class FuYiController {
         String returnResult= HttpUtil.sendGet(url,param,map,nowDate);
         JSONObject jsonObj = JSONObject.parseObject(returnResult);
         System.out.println(jsonObj);
+        String fuyiResult=jsonObj.getString("result");
+        String data=jsonObj.getString("data");
+        System.out.println("data:"+data);
+        if ("true".equals(fuyiResult) && null!=data && data.length()>2){
+            Reservation reservations=reservationService.getOne(new QueryWrapper<Reservation>().eq("Confirm_no",ConfirmNo));
+            List<Reservation> list=getOneReservation(ConfirmNo,"I");
+            for (Reservation reservation : list){
+                reservation.setArrivalBizDate(reservation.getArrivalBizDate().replace("T"," "));
+                reservation.setDepartBizDate(reservation.getDepartBizDate().replace("T"," "));
+                reservation.setArrivalTime(reservation.getArrivalTime().replace("T"," "));
+                reservation.setCreateTime(reservation.getCreateTime().replace("T"," "));
+                reservation.setDepartTime(reservation.getDepartTime().replace("T"," "));
+                reservation.setIsActionTime(reservation.getIsActionTime().replace("T"," "));
+            }
+            if (reservations==null){
+                reservationService.saveBatch(list);
+            }else{
+                list.get(0).setId(reservations.getId());
+                reservationService.updateById(list.get(0));
+            }
+
+            OperationRecord operationRecord=new OperationRecord();
+            operationRecord.setName(list.get(0).getGuestName());
+            operationRecord.setCreateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+            operationRecord.setOperation("UPDATE");
+            operationRecord.setOperationDes("订单确认号为:"+ConfirmNo+"，姓名为:"+operationRecord.getName()+"的客人，在"+operationRecord.getCreateTime()+",在自助机办理续住。");
+            operationRecord.setResno(ConfirmNo);
+            operationRecordService.save(operationRecord);
+
+        }else{
+            return SetResultUtil.setErrorMsgResult(result,"失败",jsonObj);
+        }
         return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
     }
 
@@ -701,7 +893,7 @@ public class FuYiController {
      */
     @RequestMapping(value = "/CalculateTheAmountToBePaid", method = RequestMethod.GET)
     @ApiOperation(value = "计算需支付金额", httpMethod = "GET")
-    public Result<JSONObject> CalculateTheAmountToBePaid(String ResId,String ConfirmNo,String state) throws Exception {
+    public Result<JSONObject> CalculateTheAmountToBePaid(String ResId,String ConfirmNo,String state,String CheckOutDate) throws Exception {
         log.info("CalculateTheAmountToBePaid()方法");
         Result<JSONObject> result = new Result<JSONObject>();
         String nowDate=new Date().getTime()+"";
@@ -710,6 +902,7 @@ public class FuYiController {
         map.put("ResId",ResId);
         map.put("ConfirmNo",ConfirmNo);
         map.put("state",state);
+        map.put("CheckOutDate",CheckOutDate);
         String param= HttpUtil.getMapToString(map);
         System.out.println("param:"+param);
         String url=fuyiaddress+"/api/Reservation/CalculateTheAmountToBePaid";
@@ -735,9 +928,38 @@ public class FuYiController {
         String returnResult= HttpUtil.sendGet(url,param,map,nowDate);
         JSONObject jsonObj = JSONObject.parseObject(returnResult);
         System.out.println(jsonObj);
+        String fuyiResult=jsonObj.getString("result");
+        String data=jsonObj.getString("data");
+        System.out.println("data:"+data);
+        if ("true".equals(fuyiResult) && null!=data && data.length()>2){
+            Reservation reservations=reservationService.getOne(new QueryWrapper<Reservation>().eq("Confirm_no",ConfirmNo));
+            List<Reservation> list=getOneReservation(ConfirmNo,"O");
+            for (Reservation reservation : list){
+                reservation.setArrivalBizDate(reservation.getArrivalBizDate().replace("T"," "));
+                reservation.setDepartBizDate(reservation.getDepartBizDate().replace("T"," "));
+                reservation.setArrivalTime(reservation.getArrivalTime().replace("T"," "));
+                reservation.setCreateTime(reservation.getCreateTime().replace("T"," "));
+                reservation.setDepartTime(reservation.getDepartTime().replace("T"," "));
+                reservation.setIsActionTime(reservation.getIsActionTime().replace("T"," "));
+            }
+            if (reservations==null){
+                reservationService.saveBatch(list);
+            }else{
+                list.get(0).setId(reservations.getId());
+                reservationService.updateById(list.get(0));
+            }
+            OperationRecord operationRecord=new OperationRecord();
+            operationRecord.setName(list.get(0).getGuestName());
+            operationRecord.setCreateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+            operationRecord.setOperation("CHECKOUT");
+            operationRecord.setOperationDes("订单确认号为:"+ConfirmNo+"，姓名为:"+operationRecord.getName()+"的客人，在"+operationRecord.getCreateTime()+",在自助机办理退房。");
+            operationRecord.setResno(ConfirmNo);
+            operationRecordService.save(operationRecord);
+        }else{
+            return SetResultUtil.setErrorMsgResult(result,"失败",jsonObj);
+        }
         return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
     }
-
 
     /**
      *
@@ -767,7 +989,67 @@ public class FuYiController {
         return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
     }
 
+    /**
+     *  http://47.75.119.166:8066/webapinew/api/RoomRate/AddDoorsLog/
+     * @param RoomNo
+     * @return
+     * @throws Exception
+     */
+    @RequestMapping(value = "/AddDoorsLog", method = RequestMethod.GET)
+    @ApiOperation(value = "AddDoorsLog", httpMethod = "GET")
+    public Result<JSONObject> AddDoorsLog(String ResID,String BeginTime,
+                                          String EndTime,String RoomNo,String Opareator) throws Exception {
+        log.info("AddDoorsLog()方法");
+        Result<JSONObject> result = new Result<JSONObject>();
+        String nowDate=new Date().getTime()+"";
+        Map<String,String> map=getMap(nowDate);
+        map.put("HotelNo",HotelNo);
+        map.put("HotelCode",HotelNo);
+        map.put("RoomNo",RoomNo);
+        map.put("ResID",ResID);
+        map.put("BeginTime",BeginTime);
+        map.put("EndTime",EndTime);
+        map.put("Opareator",Opareator);
+        String param= HttpUtil.getMapToString(map);
+        System.out.println("param:"+param);
+        String url=fuyiaddress+"/api/RoomRate/AddDoorsLog";
+        String returnResult= HttpUtil.sendGet(url, param,map,nowDate);
+        JSONObject jsonObj = JSONObject.parseObject(returnResult);
+        System.out.println(jsonObj);
+        return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
+    }
 
+
+    /**
+     *  http://47.75.119.166:8066/webapinew/api/Membership/GetMemberInfoByMobileNoAndRegister/
+     * @return
+     * @throws Exception
+     */
+    @RequestMapping(value = "/GetMemberInfoByMobileNoAndRegister", method = RequestMethod.GET)
+    @ApiOperation(value = "GetMemberInfoByMobileNoAndRegister", httpMethod = "GET")
+    public Result<JSONObject> GetMemberInfoByMobileNoAndRegister(String MobileNo) throws Exception {
+        log.info("GetMemberInfoByMobileNoAndRegister()方法");
+        Result<JSONObject> result = new Result<JSONObject>();
+        String nowDate=new Date().getTime()+"";
+        Map<String,String> map=getMap(nowDate);
+        map.put("HotelNo",HotelNo);
+        map.put("MobileNo",MobileNo);
+        String param= HttpUtil.getMapToString(map);
+        System.out.println("param:"+param);
+        String url=fuyiaddress+"/api/Membership/GetMemberInfoByMobileNoAndRegister";
+        String returnResult= HttpUtil.sendGet(url,param,map,nowDate);
+        JSONObject jsonObj = JSONObject.parseObject(returnResult);
+        System.out.println(jsonObj);
+        String fuyiResult=jsonObj.getString("result");
+        String data=jsonObj.getString("data");
+        System.out.println("data:"+data);
+        if ("true".equals(fuyiResult) && null!=data && data.length()>2){
+            return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
+        }else{
+            return SetResultUtil.setErrorMsgResult(result,"查询会员等级失败",jsonObj);
+        }
+
+    }
 
 
 

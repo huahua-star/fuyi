@@ -52,8 +52,8 @@ public class PrintController {
      * @param roomNum           房间号
      * @return
      */
-    @RequestMapping(value = "/updatechckInPerson", method = RequestMethod.POST)
-    @ApiOperation(value = "离店打印小票", httpMethod = "POST")
+    @RequestMapping(value = "/updatechckInPerson", method = RequestMethod.GET)
+    @ApiOperation(value = "离店打印小票", httpMethod = "GET")
     public R updatechckInPerson(@RequestParam(name = "reservationNumber", required = true)
                                 @ApiParam(name = "reservationNumber", value = "订单号")
                                         String reservationNumber, String stime, String ztime, String roomNum) {
@@ -64,7 +64,7 @@ public class PrintController {
         try {
             leavePrintUtil pu = new leavePrintUtil();
             leavewuPrintUtil wupu = new leavewuPrintUtil();
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
             String orderNo = null;
             Date kstime = null;
             Date jstime = null;
@@ -122,11 +122,11 @@ public class PrintController {
      * @param roomNum           房间号
      * @return
      */
-    @ApiOperation(value = "离店打印发票", httpMethod = "POST")
-    @RequestMapping(value = "/invoice", method = RequestMethod.POST)
+    @ApiOperation(value = "离店打印发票", httpMethod = "GET")
+    @RequestMapping(value = "/invoice", method = RequestMethod.GET)
     public R invoice(
             @RequestParam(name = "reservationNumber", required = true) @ApiParam(name = "reservationNumber", value = "订单号") String reservationNumber,
-            String stime, String ztime, String amount, String roomNum) {
+            String stime, String ztime, String amount, String roomNum) throws Exception {
         if (StringUtils.isEmpty(reservationNumber) || StringUtils.isEmpty(stime) || StringUtils.isEmpty(ztime) ||
                 StringUtils.isEmpty(amount) || StringUtils.isEmpty(roomNum)) {
             return R.error("请输入开票必须值!");
@@ -142,21 +142,23 @@ public class PrintController {
         Date kstime = null;
         Date jstime = null;
         int stamptype = 0;
+        Invoiqr i = new Invoiqr();
+        //打印电子发票开票
+        Map s = i.getCheckInPerson(amount, qrDir, appCode, taxpayerCode, keyStorePath,
+                keyStoreAbner, keyStorePassWord, facadeUrl, reservationNumber);
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmm");
+        String dateString = formatter.format(new Date());
+        String imgurl;
+        orderNo = (String) s.get("orderNo");
+        imgurl = (String) s.get("filePath");
+        kstime = sdf.parse(stime);
+        jstime = sdf.parse(ztime);
+        stamptype = 1;
+        pu.print(roomNum, imgurl, kstime, jstime, new Date(), orderNo);
         try {
-            Invoiqr i = new Invoiqr();
-            //打印电子发票开票
-            Map s = i.getCheckInPerson(amount, qrDir, appCode, taxpayerCode, keyStorePath,
-                    keyStoreAbner, keyStorePassWord, facadeUrl, reservationNumber);
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmm");
-            String dateString = formatter.format(new Date());
-            String imgurl;
-            orderNo = (String) s.get("orderNo");
-            imgurl = (String) s.get("filePath");
-            kstime = sdf.parse(stime);
-            jstime = sdf.parse(ztime);
-            stamptype = 1;
-            pu.print(roomNum, imgurl, kstime, jstime, new Date(), orderNo);
+
         } catch (Exception e) {
+            e.printStackTrace();
             return R.error("打印发票失败!");
         }
         return R.ok();

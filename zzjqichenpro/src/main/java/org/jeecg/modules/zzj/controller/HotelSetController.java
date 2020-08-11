@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.modules.zzj.entity.HotelSetTable;
+import org.jeecg.modules.zzj.entity.Reservation;
 import org.jeecg.modules.zzj.service.HotelSetTableService;
 import org.jeecg.modules.zzj.util.Card.SetResultUtil;
 import org.jeecg.modules.zzj.util.Returned.CommonResult;
@@ -46,5 +47,6 @@ public class HotelSetController {
         hotelSetTableService.updateById(hotelSetTable);
         return SetResultUtil.setSuccessResult(result,"成功");
     }
+
 
 }

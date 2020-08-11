@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.modules.zzj.common.ReturnCode;
 import org.jeecg.modules.zzj.common.ReturnMessage;
+import org.jeecg.modules.zzj.common.umsips;
 import org.jeecg.modules.zzj.entity.TblList;
 import org.jeecg.modules.zzj.entity.TblTxnp;
 import org.jeecg.modules.zzj.service.ITblTxnpService;
@@ -15,7 +16,6 @@ import org.jeecg.modules.zzj.util.Card.SetResultUtil;
 import org.jeecg.modules.zzj.util.CheckMapUtil;
 import org.jeecg.modules.zzj.util.FilterListUtil;
 import org.jeecg.modules.zzj.util.Pay.PayUtil;
-import org.jeecg.modules.zzj.util.Pay.umsips;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -44,6 +44,7 @@ public class PayController {
 
     static char[] strMemo = new char[1024];
 
+    private static String url="https://gateway.starpos.com.cn/adpservice/";
     /**
      * 条码普通支付
      */
@@ -52,18 +53,21 @@ public class PayController {
     public Result<Object> barcodePay(HttpServletResponse response, String amount, String orderId, String roomNo, String total_amount,
                                      String authCode, String payChannel, String paytype) {
 
-        Map<String,String> payUrlMap=new HashMap<>();
+        Map<String, String> payUrlMap=new HashMap<>();
         payUrlMap.put("0","http://sandbox.starpos.com.cn/adpweb/ehpspos3/sdkBarcodePay.json");//普通支付地址
         payUrlMap.put("1","http://sandbox.starpos.com.cn/adpservice/sdkBarcodeEmp.json");//预授权支付地址
+        //payUrlMap.put("0",url+"sdkBarcodePay.json");//普通支付地址
+        //payUrlMap.put("1",url+"sdkBarcodeEmp.json");//预授权支付地址
 
         System.out.println("预订单号:"+orderId);
         System.out.println("支付金额:"+amount);
         Result<Object> result = new Result<Object>();
         log.info("barcodePay()方法amount:{}orderId:{}",amount,orderId);
-        try {
-            String returnResult= PayUtil.sdkBarcodePay(amount,total_amount,authCode,payChannel,payUrlMap.get(paytype),Integer.parseInt(paytype));
-            System.out.println("returnResult:"+returnResult);
-            JSONObject jsonObj = JSONObject.parseObject(returnResult);
+        String returnResult=null;
+        JSONObject jsonObj =null;
+        try{
+            returnResult= PayUtil.sdkBarcodePay(amount,total_amount,authCode,payChannel,payUrlMap.get(paytype), Integer.parseInt(paytype));
+            jsonObj = JSONObject.parseObject(returnResult);
             String returnCode=jsonObj.get("returnCode").toString();
             if ("000000".equals(returnCode)){
                 String orderNo=jsonObj.get("orderNo").toString();//支付渠道订单号
@@ -101,17 +105,19 @@ public class PayController {
     }
     @ApiOperation(value="支付状态轮询", notes="支付状态轮询")
     @RequestMapping(value = "/query_order")
-    public Result<TblTxnp> query_order(String orderNo,String paytype) {
+    public Result<TblTxnp> query_order(String orderNo, String paytype) {
         log.info("进入query_order()方法orderNo:{}",orderNo);
-        Map<String,String> payQueryUrlMap=new HashMap<>();
+        Map<String, String> payQueryUrlMap=new HashMap<>();
         payQueryUrlMap.put("0","http://sandbox.starpos.com.cn/adpweb/ehpspos3/sdkQryBarcodePay.json");//普通支付地址
         payQueryUrlMap.put("1","http://sandbox.starpos.com.cn/adpservice/sdkQryBarcodePay.json");//预授权支付地址
+        //payQueryUrlMap.put("0",url+"sdkQryBarcodePay.json");//普通支付地址
+        //payQueryUrlMap.put("1",url+"sdkQryBarcodePay.json");//预授权支付地址
 
         Result<TblTxnp> result = new Result<TblTxnp>();
         try {
             log.info("查询支付状态");
             TblTxnp tbl = tblTxnpService.getOne(new QueryWrapper<TblTxnp>().eq("orderid",orderNo));
-            Map<String,String> map= PayUtil.sdkQryBarcodePay(orderNo,Integer.parseInt(paytype),payQueryUrlMap.get(paytype));
+            Map<String, String> map= PayUtil.sdkQryBarcodePay(orderNo, Integer.parseInt(paytype),payQueryUrlMap.get(paytype));
             String message = map.get("message");
             String returnCode=map.get("returnCode");
             System.out.println("message:"+message);
@@ -147,7 +153,7 @@ public class PayController {
         try {
             log.info("退款");
             TblTxnp tbl = tblTxnpService.getOne(new QueryWrapper<TblTxnp>().eq("orderid",orderNo));
-            Map<String,String> map= PayUtil.sdkRefundBarcodePay(orderNo);
+            Map<String, String> map= PayUtil.sdkRefundBarcodePay(orderNo);
             String message = map.get("message");
             String returnCode=map.get("returnCode");
             System.out.println("message:"+message);
@@ -180,13 +186,13 @@ public class PayController {
      */
     @ApiOperation(value="预授权完成", notes="预授权完成")
     @RequestMapping(value = "/sdkCompleteEmp")
-    public Result<TblTxnp> sdkCompleteEmp(String orderNo,String txnAmt) {
+    public Result<TblTxnp> sdkCompleteEmp(String orderNo, String txnAmt) {
         log.info("sdkCompleteEmp()方法orderNo:{}txnAmt{}",orderNo,txnAmt);
         Result<TblTxnp> result = new Result<TblTxnp>();
         try {
             log.info("预授权完成");
             TblTxnp tbl = tblTxnpService.getOne(new QueryWrapper<TblTxnp>().eq("orderid",orderNo));
-            Map<String,String> map= PayUtil.sdkCompleteEmp(orderNo,txnAmt);
+            Map<String, String> map= PayUtil.sdkCompleteEmp(orderNo,txnAmt);
             String message = map.get("message");
             String returnCode=map.get("returnCode");
             System.out.println("message:"+message);
@@ -217,13 +223,13 @@ public class PayController {
      */
     @ApiOperation(value="预授权撤销", notes="预授权撤销")
     @RequestMapping(value = "/sdkEmpCancel")
-    public Result<TblTxnp> sdkEmpCancel(String orderNo,String txnAmt) {
+    public Result<TblTxnp> sdkEmpCancel(String orderNo, String txnAmt) {
         log.info("sdkEmpCancel()方法orderNo:{}txnAmt{}",orderNo,txnAmt);
         Result<TblTxnp> result = new Result<TblTxnp>();
         try {
             log.info("预授权撤销");
             TblTxnp tbl = tblTxnpService.getOne(new QueryWrapper<TblTxnp>().eq("orderid",orderNo));
-            Map<String,String> map= PayUtil.sdkEmpCancel(orderNo,txnAmt);
+            Map<String, String> map= PayUtil.sdkEmpCancel(orderNo,txnAmt);
             String message = map.get("message");
             String returnCode=map.get("returnCode");
             System.out.println("message:"+message);
@@ -253,13 +259,13 @@ public class PayController {
      */
     @ApiOperation(value="预授权完成的撤销", notes="预授权完成的撤销")
     @RequestMapping(value = "/sdkComEmpCancel")
-    public Result<TblTxnp> sdkComEmpCancel(String orderNo,String txnAmt) {
+    public Result<TblTxnp> sdkComEmpCancel(String orderNo, String txnAmt) {
         log.info("sdkComEmpCancel()方法orderNo:{}txnAmt{}",orderNo,txnAmt);
         Result<TblTxnp> result = new Result<TblTxnp>();
         try {
             log.info("预授权完成的撤销");
             TblTxnp tbl = tblTxnpService.getOne(new QueryWrapper<TblTxnp>().eq("orderid",orderNo));
-            Map<String,String> map= PayUtil.sdkComEmpCancel(orderNo,txnAmt);
+            Map<String, String> map= PayUtil.sdkComEmpCancel(orderNo,txnAmt);
             String message = map.get("message");
             String returnCode=map.get("returnCode");
             System.out.println("message:"+message);
@@ -359,8 +365,8 @@ public class PayController {
             Result.error("预授权不足");
         }
         for (TblTxnp tblTxnp : tblTxnpList) {
-            System.out.println("amount:"+amount.setScale(2,BigDecimal.ROUND_HALF_UP).toString());
-            if (amount.setScale(2,BigDecimal.ROUND_HALF_UP).doubleValue()>0.00){
+            System.out.println("amount:"+amount.setScale(2, BigDecimal.ROUND_HALF_UP).toString());
+            if (amount.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue()>0.00){
                 if (tblTxnp.getPreamount().compareTo(amount) == -1) {
                     Result<TblTxnp> result=sdkCompleteEmp(tblTxnp.getOrderid(),tblTxnp.getPreamount().toString());
                     if (result.getCode()==200){
@@ -373,7 +379,7 @@ public class PayController {
                         return Result.error("一键完成预授权失败，原因:"+result.getMessage());
                     }
                 } else{
-                    Result<TblTxnp> result=sdkCompleteEmp(tblTxnp.getOrderid(),amount.setScale(2,BigDecimal.ROUND_HALF_UP).toString());
+                    Result<TblTxnp> result=sdkCompleteEmp(tblTxnp.getOrderid(),amount.setScale(2, BigDecimal.ROUND_HALF_UP).toString());
                     if (result.getCode()==200){
                         amount=amount.subtract(amount);
                         tblTxnp.setState("3");
@@ -435,11 +441,11 @@ public class PayController {
      */
     @ApiOperation(value="初始化", notes="初始化")
     @RequestMapping(value = "/UMS_Init")
-    private Result<Object> UMS_SetReq(String amount,String dealType,String originalCode){
+    private Result<Object> UMS_SetReq(String amount, String dealType, String originalCode){
         Result<Object> result = new Result<Object>();
         log.info("UMS_SetReq()进入amount:{}dealType:{}originalCode{}",amount,dealType,originalCode);
         try {
-            Map<String,String> map= new HashMap<>();
+            Map<String, String> map= new HashMap<>();
             map.put("amount",amount);
             map.put("dealType",dealType);
             //Todo  需要 金额 amount 转成 000000000001格式  单位为分
@@ -666,10 +672,10 @@ public class PayController {
      */
     @ApiOperation(value="完成交易", notes="完成交易")
     @RequestMapping(value = "/UMS_GetPin")
-    public Result<Object> UMS_GetPin(String orderId,String roomNum,String dealType,String amount,String originalCode) {
+    public Result<Object> UMS_GetPin(String orderId, String roomNum, String dealType, String amount, String originalCode) {
         Result<Object> result = new Result<Object>();
         try {
-            Map<String,String> map= new HashMap<>();
+            Map<String, String> map= new HashMap<>();
             map.put("amount",amount);
             map.put("dealType",dealType);
             map.put("roomNum",roomNum);
@@ -699,7 +705,7 @@ public class PayController {
      * 交易
      * @return
      */
-    public Result<Object> UMS_TransCard(String orderId,String roomNum,String dealType,String amount,String originalCode) throws UnsupportedEncodingException {
+    public Result<Object> UMS_TransCard(String orderId, String roomNum, String dealType, String amount, String originalCode) throws UnsupportedEncodingException {
         Result<Object> result = new Result<Object>();
         try {
             log.info("进入UMS_TransCard()方法orderId:{}",orderId);
@@ -712,7 +718,7 @@ public class PayController {
             String thisTime =  new String(subBytes(new String(strResp,"gbk").getBytes(), 90, 6));//交易时间
             String warrantyNo = new String(subBytes(new String(strResp,"gbk").getBytes(), 108, 6)); // 授权号
             String cardNo = new String(subBytes(new String(strResp,"gbk").getBytes(), 42, 20)).trim(); // 卡号
-            String  zong = warrantyNo+thisTime+cardNo;
+            String zong = warrantyNo+thisTime+cardNo;
             log.info("thisTime:"+thisTime);
             log.info("warrantyNo:"+warrantyNo);
             log.info("cardNo:"+cardNo);
@@ -734,7 +740,7 @@ public class PayController {
                 tbl.setPreOrderid(orderId);
                 tbl.setPaymethod("2");
                 tbl.setRoomnum(roomNum);
-                tbl.setCreateTime(thisTime);
+                tbl.setCreateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
                 tbl.setCardno(cardNo);
                 tbl.setState("2");
                 switch (dealType){
@@ -845,5 +851,7 @@ public class PayController {
         System.arraycopy(src, begin, bs, 0, count);
         return bs;
     }
+
+
 
 }

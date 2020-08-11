@@ -5,7 +5,7 @@ public class K7X0 {
 	static {
 		//System.loadLibrary("K7X0_Dll");
 		//需要将K7X0_DLL.dll文件放到项目的同级目录
-		System.load(System.getProperty("user.dir")+"\\K7X0_Dll.dll");
+		System.load("D:\\K7X0_Dll.dll");
 	}
 	
 	byte[] ReceBuf=new byte[500];

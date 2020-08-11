@@ -66,37 +66,33 @@ public class leavewuPrintUtil implements Printable {
         if (page >= PAGES) // 当打印页号大于需要打印的总页数时，打印工作结束
             return Printable.NO_SUCH_PAGE;
         g2.translate(pf.getImageableX(), pf.getImageableY());// 转换坐标，确定打印边界
-        Font font = new Font("宋体", Font.PLAIN, 16);// 创建字体
+        Font font = new Font("宋体", Font.PLAIN, 14);// 创建字体
         Paper p = new Paper();
         g2.setFont(font);
-        p.setSize(180, 180);
+        p.setSize(160, 160);
         p.setImageableArea(10, 10, 100, 141);
         pf.setPaper(p);
         // 打印当前页文本
         g2.drawString("期待您再次光临", 35, 10);
-        g2.drawString("北京宝之谷国际会议中心", 10, 30);
-        font = new Font("宋体", Font.PLAIN, 15);// 创建字体
+        g2.drawString("富驿时尚酒店(北京中关村店)", 8, 30);
+        font = new Font("宋体", Font.PLAIN, 12);// 创建字体
         g2.setFont(font);
         g2.drawString("------------------------------------------", 10, 50);
         g2.drawString("------------------------------------------", 10, 52);
         g2.drawString(""+num+"号房间", 63, 65);
-        font = new Font("宋体", Font.PLAIN, 15);
-        g2.setFont(font);
-        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");//设置日期格式
-        g2.drawString("预约入住时间:" + df.format(ktime), 15, 85);
-        g2.drawString("预约离店时间:" + df.format(jtime), 15, 100);
-        g2.drawString("离店时间    :" + df.format(liTime), 15, 115);
         font = new Font("宋体", Font.PLAIN, 12);
         g2.setFont(font);
-        g2.drawString("------------------------------------------", 10, 125);
-        g2.drawString("------------------------------------------", 10, 127);
-        g2.drawString("您可以持小票去前台办理发票!", 20, 145);
-        font = new Font("宋体", Font.PLAIN, 10);// 创建字体
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");//设置日期格式
+        g2.drawString("入住时间:" + df.format(ktime), 10, 85);
+        g2.drawString("离店时间:" + df.format(jtime), 10, 100);
+        font = new Font("宋体", Font.PLAIN, 12);
         g2.setFont(font);
-        g2.drawString("希望您度过美好的一天!", 45, 160);
-        font = new Font("宋体", Font.PLAIN, 1);// 创建字体
+        g2.drawString("------------------------------------------", 10, 110);
+        g2.drawString("------------------------------------------", 10, 112);
+        g2.drawString("您可以持小票去前台办理发票!", 20, 127);
+        font = new Font("宋体", Font.PLAIN, 12);// 创建字体
         g2.setFont(font);
-        g2.drawString("1", 15, 165);
+        g2.drawString("希望您度过美好的一天!", 45, 142);
         return Printable.PAGE_EXISTS; // 存在打印页时，继续打印工作
     }
 }

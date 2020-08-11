@@ -76,7 +76,7 @@ public class leavePrintUtil implements Printable {
         pf.setPaper(p);
         // 打印当前页文本
         g2.drawString("期待您再次光临", 35, 15);
-        g2.drawString("北京宝之谷国际会议中心" , 9, 35);
+        g2.drawString("富驿时尚酒店(北京中关村店)" , 9, 35);
         font = new Font("宋体", Font.PLAIN, 14);// 创建字体
         g2.setFont(font);
         g2.drawString("------------------------------------------", 10, 55);

@@ -94,12 +94,12 @@ public class PrintUtil implements Printable {
             Font font = new Font("宋体", Font.PLAIN, 14);// 创建字体
             Paper p = new Paper();
             g2.setFont(font);
-            p.setSize(180, 180);
+            p.setSize(235, 235);
             p.setImageableArea(10, 10, 100, 141);
             pf.setPaper(p);
             // 打印当前页文本
             g2.drawString("欢迎您入住", 53, 5);
-            g2.drawString("北京宝之谷国际会议中心", 20, 25);
+            g2.drawString("富驿时尚酒店(北京中关村店)", 8, 25);
             g2.drawString("------------------------------------------", 10, 40);
             g2.drawString("------------------------------------------", 10, 42);
             Font roomfont= new Font("宋体", Font.PLAIN, 22);//房间字体
@@ -113,19 +113,20 @@ public class PrintUtil implements Printable {
                 g2.drawString("授权金额: " + moneys + "",15, 90);
             }
             g2.drawString("预 定 号: " + reservationNum + "",15,105);
-            g2.drawString("WiFi名称: " + name + "", 15, 120);
-            g2.drawString("WiFi密码: " + pass + "", 15, 135);
+            g2.drawString("WiFi名称: " + num + "", 15, 120);
+            g2.drawString("WiFi密码: 手机验证", 15, 135);
             g2.drawString("前台总机: " + phones + "", 15, 150);
             g2.drawString("------------------------------------------", 10, 162);
             g2.drawString("------------------------------------------", 10, 164);
             font = new Font("宋体", Font.PLAIN, 12);// 创建字体
             g2.setFont(font);
-            g2.drawString("希望您度过美好的一天!", 15, 180);
-            g2.drawString("入住时间:" + sTime, 15, 195);
-            g2.drawString("离店时间:" + endTime, 15, 210);
-            font = new Font("宋体", Font.PLAIN, 1);// 创建字体
+            g2.drawString("入住时间:" + sTime, 15, 175);
+            g2.drawString("离店时间:" + endTime, 15, 190);
+            font = new Font("宋体", Font.PLAIN, 10);// 创建字体
             g2.setFont(font);
-            g2.drawString("1", 15, 220);
+            g2.drawString("因响应北京旅店要求,酒店房间未配备一次", 5, 205);
+            g2.drawString("性用品,如您需要一次性用品,致电前台/", 5, 220);
+            g2.drawString("客服中心(86或6636)酒店服务员会送至客房", 5, 235);
             return Printable.PAGE_EXISTS; // 存在打印页时，继续打印工作
         }catch (Exception e){
             e.printStackTrace();
