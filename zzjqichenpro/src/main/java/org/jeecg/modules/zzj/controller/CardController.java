@@ -232,28 +232,6 @@ public class CardController {
                 if (writeResult.getCode()==200) {
                     System.out.println("开始发卡");
                     K7X0Util.sendCardToTake(comHandle);
-
-                    log.info("打印小票需要的数据");
-                    PrintUtil pu = new PrintUtil();
-                    //查询数据库中存储的流水记录
-                    String money = "";
-                    String reservationType = "";
-                    if (null != id && !"".equals(id)) {
-                        TblTxnp tblTxnp = tblTxnpService.getOne(new QueryWrapper<TblTxnp>().eq("id", id));
-                        money = tblTxnp.getPreamount().toString();//预授权金额
-                        reservationType = tblTxnp.getPaymethod();
-                        if (reservationType == "0" || reservationType.equals("0")) {
-                            reservationType = "支付宝";
-                        } else if (reservationType == "1" || reservationType.equals("1")) {
-                            reservationType = "微信";
-                        } else {
-                            reservationType = "银联";
-                        }
-                    }
-                    //打印小票无 早餐数据
-                    pu.print(roomno, phone, wifiname, wifipass, hotelname, cityaddress, areaaddress, roadaddress, communityaddress,
-                            numberaddress, money, reservationType,CheckInTime,
-                            CheckOutTime, orderId);
                     Thread.sleep(2000);
                 } else {
                     //记录发卡
@@ -268,6 +246,28 @@ public class CardController {
                     return SetResultUtil.setErrorMsgResult(result, "写卡失败");
                 }
             }
+            log.info("打印小票需要的数据");
+            PrintUtil pu = new PrintUtil();
+            //查询数据库中存储的流水记录
+            String money = "";
+            String reservationType = "";
+            if (null != id && !"".equals(id)) {
+                TblTxnp tblTxnp = tblTxnpService.getOne(new QueryWrapper<TblTxnp>().eq("id", id));
+                money = tblTxnp.getPreamount().toString();//预授权金额
+                reservationType = tblTxnp.getPaymethod();
+                if (reservationType == "0" || reservationType.equals("0")) {
+                    reservationType = "支付宝";
+                } else if (reservationType == "1" || reservationType.equals("1")) {
+                    reservationType = "微信";
+                } else {
+                    reservationType = "银联";
+                }
+            }
+            //打印小票无 早餐数据
+            pu.print(roomno, phone, wifiname, wifipass, hotelname, cityaddress, areaaddress, roadaddress, communityaddress,
+                    numberaddress, money, reservationType,CheckInTime,
+                    CheckOutTime, orderId);
+
             //记录发卡
             Record record=new Record();
             record.setOrderId(orderId);

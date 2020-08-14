@@ -477,7 +477,7 @@ public class FuYiController {
     @ApiOperation(value = "查询订单", httpMethod = "GET")
     public Result<JSONObject> SSMForQueryReservation(String ConfirmNo, String ResStates, String CurrencyNo, String GuestsName,
                                                      String RoomNo, String BeginArrivalBizDate, String EndArrivalBizDate,
-                                                     String BeginDepartBizDate, String EndDepartBizDate) throws Exception {
+                                                     String BeginDepartBizDate, String EndDepartBizDate,String GroupID) throws Exception {
         log.info("SSMForQueryReservation()方法");
         Result<JSONObject> result = new Result<JSONObject>();
         String nowDate=new Date().getTime()+"";
@@ -492,6 +492,7 @@ public class FuYiController {
         map.put("EndArrivalBizDate",EndArrivalBizDate);
         map.put("BeginDepartBizDate",BeginDepartBizDate);
         map.put("EndDepartBizDate",EndDepartBizDate);
+        map.put("GroupID",GroupID);
         String param= HttpUtil.getMapToString(map);
         System.out.println("param:"+param);
         String url=fuyiaddress+"/api/Reservation/SSMForQueryReservation";
