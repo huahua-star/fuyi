@@ -115,12 +115,9 @@ public class pdfReport {
             table2.addCell( createCellBottomBoder(list.get(i).getState().equals("1")?"成功":"失败", keyfont, Element.ALIGN_CENTER,0.5f));
         }
 
-        table2.addCell( createCellBottomBoderCospan("合计", keyfont, Element.ALIGN_RIGHT,0.7f,3));
+        table2.addCell( createCellBottomBoderCospan("合计", keyfont, Element.ALIGN_RIGHT,0.7f,2));
         table2.addCell( createCellBottomBoderCospan("Total", keyfont, Element.ALIGN_CENTER,0.7f,2));
         table2.addCell( createCellBottomBoder(total, keyfont, Element.ALIGN_CENTER,0.7f));
-        table2.addCell( createCellBottomBoderCospan("", keyfont, Element.ALIGN_LEFT,0.7f,2));
-        table2.addCell( createCellBottomBoder("", keyfont, Element.ALIGN_LEFT,0.7f));
-        table2.addCell( createCellBottomBoder("", keyfont, Element.ALIGN_CENTER,0.7f));
 
 
         // 添加图片
