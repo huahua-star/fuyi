@@ -122,7 +122,7 @@ public class HttpUtil {
             }else{
                 is = connection.getInputStream();
             }
-            in = new BufferedReader(new InputStreamReader(is));
+            in = new BufferedReader(new InputStreamReader(is,"utf-8"));
             String line;
             while ((line = in.readLine()) != null) {
                 result += line;

@@ -9,19 +9,20 @@ import org.jeecg.common.api.vo.Result;
 import org.jeecg.modules.zzj.common.ReturnCode;
 import org.jeecg.modules.zzj.common.ReturnMessage;
 import org.jeecg.modules.zzj.common.umsips;
+import org.jeecg.modules.zzj.entity.PayEntity;
 import org.jeecg.modules.zzj.entity.TblList;
 import org.jeecg.modules.zzj.entity.TblTxnp;
 import org.jeecg.modules.zzj.service.ITblTxnpService;
+import org.jeecg.modules.zzj.service.PayEntityService;
+import org.jeecg.modules.zzj.service.impl.PayEntityServiceImpl;
 import org.jeecg.modules.zzj.util.Card.SetResultUtil;
 import org.jeecg.modules.zzj.util.CheckMapUtil;
 import org.jeecg.modules.zzj.util.FilterListUtil;
 import org.jeecg.modules.zzj.util.Pay.PayUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
@@ -40,11 +41,52 @@ public class PayController {
     @Autowired
     private ITblTxnpService tblTxnpService;
 
+    private static String tuikuanUrl;
+    private static String putongpayUrl;
+    private static String prepayUrl;
+    @Autowired
+    private PayEntityService payEntityService;
+
+    @PostConstruct
+    public void init() {
+        PayEntity payEntity=payEntityService.getById("fuyi");
+        System.out.println("payEntity:"+payEntity);
+        tuikuanUrl=payEntity.getTuikuanUrl();
+        putongpayUrl=payEntity.getPutongpayUrl();
+        prepayUrl=payEntity.getPrepayUrl();
+    }
+
     static int iRet;
 
     static char[] strMemo = new char[1024];
 
-    private static String url="https://gateway.starpos.com.cn/adpservice/";
+    //private static String url="https://gateway.starpos.com.cn/adpservice/";
+
+
+    /**
+     * 查询微信支付宝设置
+     */
+    @ApiOperation(value="查询微信支付宝设置", notes="查询微信支付宝设置")
+    @GetMapping(value = "/getPayEntity")
+    public Result<?> getPayEntity() {
+        Result<Object> result = new Result<Object>();
+        PayEntity payEntity=payEntityService.getById("fuyi");
+        return SetResultUtil.setSuccessResult(result,"成功查询",payEntity);
+    }
+
+    /**
+     * 设置微信支付宝设置
+     */
+    @ApiOperation(value="设置微信支付宝设置", notes="设置微信支付宝设置")
+    @PostMapping(value = "/setPayEntity")
+    public Result<?> setPayEntity(@RequestBody PayEntity payEntity) {
+        Result<Object> result = new Result<Object>();
+        payEntityService.updateById(payEntity);
+        return SetResultUtil.setSuccessResult(result,"成功查询");
+    }
+
+
+
     /**
      * 条码普通支付
      */
@@ -54,10 +96,10 @@ public class PayController {
                                      String authCode, String payChannel, String paytype) {
 
         Map<String, String> payUrlMap=new HashMap<>();
-        payUrlMap.put("0","http://sandbox.starpos.com.cn/adpweb/ehpspos3/sdkBarcodePay.json");//普通支付地址
-        payUrlMap.put("1","http://sandbox.starpos.com.cn/adpservice/sdkBarcodeEmp.json");//预授权支付地址
-        //payUrlMap.put("0",url+"sdkBarcodePay.json");//普通支付地址
-        //payUrlMap.put("1",url+"sdkBarcodeEmp.json");//预授权支付地址
+        //payUrlMap.put("0","http://sandbox.starpos.com.cn/adpweb/ehpspos3/sdkBarcodePay.json");//普通支付地址
+        //payUrlMap.put("1","http://sandbox.starpos.com.cn/adpservice/sdkBarcodeEmp.json");//预授权支付地址
+        payUrlMap.put("0",putongpayUrl+"sdkBarcodePay.json");//普通支付地址
+        payUrlMap.put("1",prepayUrl+"sdkBarcodeEmp.json");//预授权支付地址
 
         System.out.println("预订单号:"+orderId);
         System.out.println("支付金额:"+amount);
@@ -108,10 +150,10 @@ public class PayController {
     public Result<TblTxnp> query_order(String orderNo, String paytype) {
         log.info("进入query_order()方法orderNo:{}",orderNo);
         Map<String, String> payQueryUrlMap=new HashMap<>();
-        payQueryUrlMap.put("0","http://sandbox.starpos.com.cn/adpweb/ehpspos3/sdkQryBarcodePay.json");//普通支付地址
-        payQueryUrlMap.put("1","http://sandbox.starpos.com.cn/adpservice/sdkQryBarcodePay.json");//预授权支付地址
-        //payQueryUrlMap.put("0",url+"sdkQryBarcodePay.json");//普通支付地址
-        //payQueryUrlMap.put("1",url+"sdkQryBarcodePay.json");//预授权支付地址
+        //payQueryUrlMap.put("0","http://sandbox.starpos.com.cn/adpweb/ehpspos3/sdkQryBarcodePay.json");//普通支付地址
+        //payQueryUrlMap.put("1","http://sandbox.starpos.com.cn/adpservice/sdkQryBarcodePay.json");//预授权支付地址
+        payQueryUrlMap.put("0",putongpayUrl+"sdkQryBarcodePay.json");//普通支付地址
+        payQueryUrlMap.put("1",prepayUrl+"sdkQryBarcodePay.json");//预授权支付地址
 
         Result<TblTxnp> result = new Result<TblTxnp>();
         try {

@@ -1,7 +1,13 @@
 package org.jeecg.modules.zzj.util.Pay;
 
 import com.alibaba.fastjson.JSONObject;
+import org.jeecg.modules.zzj.entity.PayEntity;
+import org.jeecg.modules.zzj.service.PayEntityService;
+import org.jeecg.modules.zzj.service.impl.PayEntityServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.*;
 import java.math.BigDecimal;
 import java.net.URL;
@@ -10,8 +16,26 @@ import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+@Component
 public class PayUtil {
-    private static String opSys="2";
+    private static String opSys;
+    private static String characterSet;
+    private static String orgNo;//机构号
+    private static String mercId;//商户号
+    private static String trmNo;//设备号
+    private static String signType;//签名方式
+    private static String ordinaryVersion;//普通支付版本号
+    private static String preVersion;//预授权支付版本号
+    private static String tuikuanVersion;//退款版本号
+    private static String signKey;
+    private static String tuikuanUrl;
+    private static String putongpayUrl;
+    private static String prepayUrl;
+
+    @Autowired
+    private PayEntityService payEntityService;
+
+    /*private static String opSys="2";
     private static String characterSet="00";
     private static String orgNo="518";//机构号
     private static String mercId="800290000015948";//商户号
@@ -20,7 +44,24 @@ public class PayUtil {
     private static String ordinaryVersion="V1.0.5";//普通支付版本号
     private static String preVersion="V1.0.2";//预授权支付版本号
     private static String tuikuanVersion="V1.0.0";//退款版本号
-    private static String signKey="C286D0E61C6989596A23B654FDCAB361";
+    private static String signKey="C286D0E61C6989596A23B654FDCAB361";*/
+    @PostConstruct
+    public void init() {
+        PayEntity payEntity=payEntityService.getById("fuyi");
+        opSys=payEntity.getOpSys();
+        characterSet=payEntity.getCharacterSet();
+        orgNo=payEntity.getOrgNo();
+        mercId=payEntity.getMercId();
+        trmNo=payEntity.getTrmNo();
+        signType=payEntity.getSignType();
+        ordinaryVersion=payEntity.getOrdinaryVersion();
+        preVersion=payEntity.getPreVersion();
+        tuikuanVersion=payEntity.getTuikuanVersion();
+        signKey=payEntity.getSignKey();
+        tuikuanUrl=payEntity.getTuikuanUrl();
+        putongpayUrl=payEntity.getPutongpayUrl();
+        prepayUrl=payEntity.getPrepayUrl();
+    }
     /*private static String gongyongurl="https://gateway.starpos.com.cn/adpservice/";
     private static String opSys="2";
     private static String characterSet="00";
@@ -230,7 +271,8 @@ public class PayUtil {
         paramMap.put("signValue",signValue);
         String param="{"+getMapToString(paramMap)+"}";
         System.out.println("param:"+param);
-        String returnResult=sendPost("http://sandbox.starpos.com.cn/adpweb/ehpspos3/sdkRefundBarcodePay.json",param,tradeNo,signValue,txnTime,tuikuanVersion);
+        //String returnResult=sendPost("http://sandbox.starpos.com.cn/adpweb/ehpspos3/sdkRefundBarcodePay.json",param,tradeNo,signValue,txnTime,tuikuanVersion);
+        String returnResult=sendPost(tuikuanUrl+"sdkRefundBarcodePay.json",param,tradeNo,signValue,txnTime,tuikuanVersion);
         //String returnResult=sendPost(gongyongurl+"sdkRefundBarcodePay.json",param,tradeNo,signValue,txnTime,tuikuanVersion);
         System.out.println("returnResult:"+returnResult);
         JSONObject jsonObj = JSONObject.parseObject(returnResult);
@@ -278,7 +320,8 @@ public class PayUtil {
         paramMap.put("signValue",signValue);
         String param="{"+getMapToString(paramMap)+"}";
         System.out.println("参数:"+param);
-        String returnResult=sendPost("http://sandbox.starpos.com.cn/adpservice/sdkCompleteEmp.json",param,tradeNo,signValue,txnTime,preVersion);
+        //String returnResult=sendPost("http://sandbox.starpos.com.cn/adpservice/sdkCompleteEmp.json",param,tradeNo,signValue,txnTime,preVersion);
+        String returnResult=sendPost(prepayUrl+"sdkCompleteEmp.json",param,tradeNo,signValue,txnTime,preVersion);
         //String returnResult=sendPost(gongyongurl+"sdkCompleteEmp.json",param,tradeNo,signValue,txnTime,preVersion);
         System.out.println("返回值:"+returnResult);
         JSONObject jsonObj = JSONObject.parseObject(returnResult);
@@ -324,7 +367,8 @@ public class PayUtil {
         paramMap.put("signValue",signValue);
         String param="{"+getMapToString(paramMap)+"}";
         System.out.println("参数:"+param);
-        String returnResult=sendPost("http://sandbox.starpos.com.cn/adpservice/sdkEmpCancel.json",param,tradeNo,signValue,txnTime,preVersion);
+        //String returnResult=sendPost("http://sandbox.starpos.com.cn/adpservice/sdkEmpCancel.json",param,tradeNo,signValue,txnTime,preVersion);
+        String returnResult=sendPost(prepayUrl+"sdkEmpCancel.json",param,tradeNo,signValue,txnTime,preVersion);
         //String returnResult=sendPost(gongyongurl+"sdkEmpCancel.json",param,tradeNo,signValue,txnTime,preVersion);
         System.out.println("返回值:"+returnResult);
         JSONObject jsonObj = JSONObject.parseObject(returnResult);
@@ -371,7 +415,8 @@ public class PayUtil {
         paramMap.put("signValue",signValue);
         String param="{"+getMapToString(paramMap)+"}";
         System.out.println("参数:"+param);
-        String returnResult=sendPost("http://sandbox.starpos.com.cn/adpservice/sdkComEmpCancel.json",param,tradeNo,signValue,txnTime,preVersion);
+        //String returnResult=sendPost("http://sandbox.starpos.com.cn/adpservice/sdkComEmpCancel.json",param,tradeNo,signValue,txnTime,preVersion);
+        String returnResult=sendPost(prepayUrl+"sdkComEmpCancel.json",param,tradeNo,signValue,txnTime,preVersion);
         System.out.println("返回值:"+returnResult);
         JSONObject jsonObj = JSONObject.parseObject(returnResult);
         String message = jsonObj.get("message").toString();

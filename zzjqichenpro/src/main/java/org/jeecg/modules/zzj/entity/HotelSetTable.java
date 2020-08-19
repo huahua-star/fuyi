@@ -39,6 +39,11 @@ public class HotelSetTable {
     private String checkOutName;
     //续住
     private String continueLiveName;
+    //团队入住
+    private String teamName;
+    //团队入住英文
+    private String teamNameEng;
+
     //自助预定 英文
     private String selfHelpBookEng;
     //入住 英文
@@ -65,6 +70,7 @@ public class HotelSetTable {
     private String registrationDescriptionEng;
     //首页模块颜色
     private String homePageModuleColor;
-
+    //团队是否续房
+    private String teamWhetherXuFang;
 }
 

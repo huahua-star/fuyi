@@ -37,11 +37,11 @@ public class Sample {
         byte[] data = res.getData();
         JSONObject res1 = res.getResult();
         if (data != null) {
-            try {
-                Util.writeBytesToFileSystem(data, "output.mp3");
+            /*try {
+                //Util.writeBytesToFileSystem(data, "output.mp3");
             }catch (IOException e){
                 e.printStackTrace();
-            }
+            }*/
                 return data;
         }
         if (res1 != null) {
