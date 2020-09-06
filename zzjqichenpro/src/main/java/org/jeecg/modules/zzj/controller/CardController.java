@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.swing.plaf.TableHeaderUI;
 import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -224,7 +225,12 @@ public class CardController {
             }
             for (int i = 0; i < num; i++) {
                 System.out.println("发送到读卡位置");
-                K7X0Util.sendToRead(comHandle);
+                // 将卡片发送到读卡位置
+                int key=K7X0Util.sendToReadToReturn(comHandle);
+                //读卡
+                if (0 != key){
+                    return Result.error("失败");
+                }
                 /**
                  * 写卡
                  */
@@ -324,7 +330,11 @@ public class CardController {
             }
             for (int i = 0; i < num; i++) {
                 System.out.println("发送到读卡位置");
-                K7X0Util.sendToRead(comHandle);
+                int key=K7X0Util.sendToReadToReturn(comHandle);
+                //读卡
+                if (0 != key){
+                    return Result.error("失败");
+                }
                 /**
                  * 写卡
                  */
@@ -443,13 +453,8 @@ public class CardController {
     public Result<Object> Recoverycard() throws InterruptedException {
         Result<Object> result = new Result<>();
         log.info("Recoverycard()方法");
-        // 回收到发卡箱
-        Boolean flag = K7X0Util.regainCard(comHandle);
-        if (!flag) {
-            return SetResultUtil.setErrorMsgResult(result, "退卡失败");
-        }
         // 将卡片发送到读卡位置
-        int key=K7X0Util.sendToReadToReturn(comHandle);
+        int key=K7X0Util.sendTakeToRead(comHandle);
         //读卡
         if (0 == key){
             result=ReadCard();

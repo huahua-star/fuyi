@@ -21,6 +21,7 @@ import org.jeecg.modules.zzj.service.ReservationService;
 import org.jeecg.modules.zzj.util.Card.SetResultUtil;
 import org.jeecg.modules.zzj.util.Http.HttpUtil;
 import org.jeecg.modules.zzj.util.SignUtils;
+import org.jeecg.modules.zzj.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.InetAddress;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
@@ -453,6 +456,9 @@ public class FuYiController {
         return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
     }
 
+
+
+
     /**
      *
      * @param ConfirmNo PMS系统确认号
@@ -498,12 +504,70 @@ public class FuYiController {
         String url=fuyiaddress+"/api/Reservation/SSMForQueryReservation";
         String returnResult= HttpUtil.sendGet(url,param,map,nowDate);
         JSONObject jsonObj = JSONObject.parseObject(returnResult);
+        JSONObject old = JSONObject.parseObject(returnResult);
         System.out.println(jsonObj);
         String fuyiResult=jsonObj.getString("result");
         String data=jsonObj.getString("data");
-        System.out.println("data:"+data);
         if ("true".equals(fuyiResult) && null!=data && data.length()>2){
-            return SetResultUtil.setSuccessResult(result,"成功",jsonObj);
+            if(!StringUtils.isNullOrEmpty(ResStates)&&"I".equals(ResStates)){
+                JSONArray datas=jsonObj.getJSONArray("data");
+                JSONObject mid=datas.getJSONObject(0);
+                JSONArray ResTransaction=mid.getJSONArray("ResTransaction");
+                JSONArray newArray=new JSONArray();
+                for(int i=0;i<ResTransaction.size();i++){
+                    boolean flag=true;
+                    for (int k=0;k<newArray.size();k++){
+                        if (i==0){
+                            break;
+                        }
+                        if (ResTransaction.getJSONObject(i).getString("TransType").equals(newArray.getJSONObject(k).getString("TransType"))) {
+                            flag=false;
+                            if (!StringUtils.isNullOrEmpty(ResTransaction.getJSONObject(i).getString("Charge"))
+                                    && !StringUtils.isNullOrEmpty(newArray.getJSONObject(k).getString("Charge"))
+                            ){
+                                BigDecimal allCharge=new BigDecimal(newArray.getJSONObject(k).getString("Charge"));
+                                BigDecimal oldCharge=new BigDecimal(ResTransaction.getJSONObject(i).getString("Charge"));
+                                BigDecimal oldTaxOne=new BigDecimal(ResTransaction.getJSONObject(i).getString("TaxOne"));
+                                BigDecimal oldTaxTwo=new BigDecimal(ResTransaction.getJSONObject(i).getString("TaxTwo"));
+                                BigDecimal oldTaxThree=new BigDecimal(ResTransaction.getJSONObject(i).getString("TaxThree"));
+                                allCharge=allCharge.add(oldCharge);
+                                allCharge=allCharge.add(oldTaxOne);
+                                allCharge=allCharge.add(oldTaxTwo);
+                                allCharge=allCharge.add(oldTaxThree);
+                                newArray.getJSONObject(k).put("Charge",allCharge.setScale(2, RoundingMode.HALF_UP));
+                            }
+                            if (!StringUtils.isNullOrEmpty(ResTransaction.getJSONObject(i).getString("Payment"))
+                                    && !StringUtils.isNullOrEmpty(newArray.getJSONObject(k).getString("Payment"))
+                            ){
+                                BigDecimal allCharge=new BigDecimal(newArray.getJSONObject(k).getString("Payment"));
+                                BigDecimal oldCharge=new BigDecimal(ResTransaction.getJSONObject(i).getString("Payment"));
+                                allCharge=allCharge.add(oldCharge);
+                                newArray.getJSONObject(k).put("Payment",allCharge.setScale(2, RoundingMode.HALF_UP));
+                            }
+                        }
+                    }
+                    if (flag){
+                        newArray.add(ResTransaction.get(i));
+                        JSONObject j=newArray.getJSONObject(newArray.size()-1);
+                        if (!StringUtils.isNullOrEmpty(j.getString("Charge"))){
+                            BigDecimal allCharge=new BigDecimal(j.getString("Charge"));
+                            BigDecimal oldTaxOne=new BigDecimal(ResTransaction.getJSONObject(i).getString("TaxOne"));
+                            BigDecimal oldTaxTwo=new BigDecimal(ResTransaction.getJSONObject(i).getString("TaxTwo"));
+                            BigDecimal oldTaxThree=new BigDecimal(ResTransaction.getJSONObject(i).getString("TaxThree"));
+                            allCharge=allCharge.add(oldTaxOne);
+                            allCharge=allCharge.add(oldTaxTwo);
+                            allCharge=allCharge.add(oldTaxThree);
+                            j.put("Charge",allCharge.setScale(2, RoundingMode.HALF_UP));
+                        }
+                    }
+                }
+                JSONArray loddatas=old.getJSONArray("data");
+                JSONObject oldmid=loddatas.getJSONObject(0);
+                oldmid.put("ResTransactions",newArray);
+                loddatas.set(0,oldmid);
+                old.put("data",loddatas);
+            }
+            return SetResultUtil.setSuccessResult(result,"成功",old);
         }else{
             return SetResultUtil.setErrorMsgResult(result,"查无此订单");
         }

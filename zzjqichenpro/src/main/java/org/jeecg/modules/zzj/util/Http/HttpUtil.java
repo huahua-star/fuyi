@@ -405,7 +405,11 @@ public class HttpUtil {
         for (int i = 0; i < keyArray.length; i++) {
             // 参数值为空，则不参与签名 这个方法trim()是去空格
             if (map.get(keyArray[i]).trim().length() > 0) {
-                sb.append(keyArray[i]).append("=").append(map.get(keyArray[i]).trim());
+                try {
+                    sb.append(keyArray[i]).append("=").append(URLEncoder.encode(map.get(keyArray[i]).trim(),"utf-8"));
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
             }
             if(i != keyArray.length-1 && map.get(keyArray[i]).trim().length() > 0){
                 sb.append("&");

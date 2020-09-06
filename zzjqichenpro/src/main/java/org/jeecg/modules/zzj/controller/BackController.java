@@ -6,22 +6,22 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.models.auth.In;
 import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.system.query.QueryGenerator;
+import org.jeecg.modules.zzj.entity.Invoice;
 import org.jeecg.modules.zzj.entity.Reservation;
 import org.jeecg.modules.zzj.entity.TblTxnp;
 import org.jeecg.modules.zzj.service.ITblTxnpService;
+import org.jeecg.modules.zzj.service.InvoiceService;
 import org.jeecg.modules.zzj.service.ReservationService;
 import org.jeecg.modules.zzj.service.impl.TblTxnpServiceImpl;
 import org.jeecg.modules.zzj.util.Card.SetResultUtil;
 import org.jeecg.modules.zzj.util.Http.HttpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
@@ -38,6 +38,24 @@ public class BackController {
 
     @Autowired
     private ITblTxnpService tblTxnpService;
+
+    @Autowired
+    private InvoiceService invoiceService;
+
+    @ApiOperation(value = "查询发票配置参数")
+    @RequestMapping(value = "/queryInvoice", method = RequestMethod.GET)
+    public Result queryInvoice(){
+        Result<Invoice> result = new Result<>();
+        Invoice invoice=invoiceService.getById("fuyi");
+        return  SetResultUtil.setSuccessResult(result,"成功查询",invoice);
+    }
+    @ApiOperation(value = "设置发票配置参数")
+    @PostMapping(value = "/setInvoice")
+    public Result setInvoice(@RequestBody Invoice invoice){
+        Result<Invoice> result = new Result<>();
+        invoiceService.updateById(invoice);
+        return  SetResultUtil.setSuccessResult(result,"设置成功",invoice);
+    }
 
     @ApiOperation(value = "查询订单")
     @RequestMapping(value = "/queryReservation", method = RequestMethod.GET)

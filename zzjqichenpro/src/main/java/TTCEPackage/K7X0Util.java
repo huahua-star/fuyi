@@ -209,7 +209,7 @@ public class K7X0Util {
             System.out.println("检测读卡位置");
             flag = !check(3,0x33);
             System.out.println("while:"+flag);
-            Reader.sleep(1000);
+            Reader.sleep(2500);
         }
         System.out.println("发送到读卡位置成功");
         flag = check(3,0x33);
@@ -217,6 +217,39 @@ public class K7X0Util {
         if (flag){
             return 0;
         }else{
+            return 2;
+        }
+    }
+
+    /**
+     * 从取卡位置发送到读卡位置
+     */
+    public static int sendTakeToRead(Integer comHandle){
+        Boolean flag = true;
+        if(!open(comHandle)){
+            System.out.println("发卡器串口打开失败+=========>com:"+comHandle);
+            return 1;
+        }
+        RecvBuf[0] = 0x46;//F
+        RecvBuf[1] = 0x43;//C
+        RecvBuf[2] = 0x38;//8
+        Reader.SendCmd(ComHandle, MacAddr,RecvBuf, 3);	//前端进卡
+        Reader.sleep(300);
+        while (flag){
+            RecvBuf[0] = 0x46;//F
+            RecvBuf[1] = 0x43;//C
+            RecvBuf[2] = 0x37;//7
+            Reader.SendCmd(ComHandle, MacAddr,RecvBuf, 3);
+            System.out.println("检测读卡位置");
+            flag = !check(3,0x33);
+            System.out.println("while:"+flag);
+        }
+        System.out.println("发送到读卡位置成功");
+        flag = check(3,0x33);
+        System.out.println("flag:"+flag);
+        if (flag){
+            return 0;
+        }else {
             return 2;
         }
     }
