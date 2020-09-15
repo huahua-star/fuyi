@@ -58,7 +58,8 @@ public class Invoiqr {
 		map1.put("name", "住店");
 		map1.put("taxRate", 0.06);
 		map1.put("amount", amount);
-		map1.put("catalogCode", "5010199000000000000");
+		//map1.put("catalogCode", "5010199000000000000");
+		map1.put("catalogCode", "3070402000000000000");
 		orderItems.add(map1);
 		map.put("orderItems", orderItems);
 		String param = JSON.toJSONString(map);
@@ -70,8 +71,9 @@ public class Invoiqr {
 		vars.put("sign", URLEncoder.encode(sign, encode));
 		String responseJson = HttpUtil.doPost(facadeUrl, vars, param, 10000, 10000);
 		ResponseData responseData = JSON.parseObject(responseJson, ResponseData.class);
-		String urlCode = "http://www.chinaeinv.com:980/scancode/init?orderNo=" + orderNo + "&scanCodeKey=" + orderNo
-				+ "&taxpayerCode=" + taxpayerCode;
+		/*String urlCode = "http://www.chinaeinv.com:980/scancode/init?orderNo=" + orderNo + "&scanCodeKey=" + orderNo
+				+ "&taxpayerCode=" + taxpayerCode;*/
+		String urlCode = "http://www.chinaeinv.com/scancode/"+taxpayerCode+"/"+orderNo+"/"+orderNo;
         System.out.println("urlCode"+urlCode);
 		File file = new File(qrDir);
 		if (!file.exists()) {

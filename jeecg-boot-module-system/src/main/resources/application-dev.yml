@@ -101,11 +101,11 @@ spring:
         connectionProperties: druid.stat.mergeSql\=true;druid.stat.slowSqlMillis\=5000
       datasource:
         master:
-          #url: jdbc:mysql://127.0.0.1:3307/fuyipro?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true
-          url: jdbc:mysql://119.2.7.45:3307/fuyipro?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true
+          url: jdbc:mysql://127.0.0.1:3306/fuyipro?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true
+          #url: jdbc:mysql://119.2.7.45:3307/fuyipro?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true
           username: root
-          password: yuntu@163
-          #password: hejiahua
+          #password: yuntu@163
+          password: 123456
           driver-class-name: com.mysql.jdbc.Driver
           validationQuery: SELECT 1 FROM DUAL
   #redis 配置

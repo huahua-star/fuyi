@@ -26,13 +26,15 @@ public class leavewuPrintUtil implements Printable {
     private Date jtime;
     private Date liTime;
     private String img;
+    private String moneys;
 
-    public void print(String roomNum, String imgurl, Date kstime, Date jstime, Date leaveTime) {
+    public void print(String roomNum, String imgurl, Date kstime, Date jstime, Date leaveTime,String money) {
         num = roomNum;
         img = imgurl;
         ktime = kstime;
         jtime = jstime;
         liTime = leaveTime;
+        moneys= money;
             PAGES = 1; // 获取打印总页数
             // 指定打印输出格式
             DocFlavor flavor = DocFlavor.SERVICE_FORMATTED.PRINTABLE;
@@ -69,7 +71,7 @@ public class leavewuPrintUtil implements Printable {
         Font font = new Font("宋体", Font.PLAIN, 14);// 创建字体
         Paper p = new Paper();
         g2.setFont(font);
-        p.setSize(160, 160);
+        p.setSize(175, 175);
         p.setImageableArea(10, 10, 100, 141);
         pf.setPaper(p);
         // 打印当前页文本
@@ -82,17 +84,18 @@ public class leavewuPrintUtil implements Printable {
         g2.drawString(""+num+"号房间", 63, 65);
         font = new Font("宋体", Font.PLAIN, 12);
         g2.setFont(font);
+        g2.drawString("退款金额:" + moneys, 10, 85);
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");//设置日期格式
-        g2.drawString("入住时间:" + df.format(ktime), 10, 85);
-        g2.drawString("离店时间:" + df.format(jtime), 10, 100);
+        g2.drawString("入住时间:" + df.format(ktime), 10, 100);
+        g2.drawString("离店时间:" + df.format(jtime), 10, 115);
         font = new Font("宋体", Font.PLAIN, 12);
         g2.setFont(font);
-        g2.drawString("------------------------------------------", 10, 110);
-        g2.drawString("------------------------------------------", 10, 112);
-        g2.drawString("您可以持小票去前台办理发票!", 20, 127);
+        g2.drawString("------------------------------------------", 10, 125);
+        g2.drawString("------------------------------------------", 10, 127);
+        g2.drawString("您可以持小票去前台办理发票!", 20, 142);
         font = new Font("宋体", Font.PLAIN, 12);// 创建字体
         g2.setFont(font);
-        g2.drawString("希望您度过美好的一天!", 45, 142);
+        g2.drawString("希望您度过美好的几天!", 45, 157);
         return Printable.PAGE_EXISTS; // 存在打印页时，继续打印工作
     }
 }

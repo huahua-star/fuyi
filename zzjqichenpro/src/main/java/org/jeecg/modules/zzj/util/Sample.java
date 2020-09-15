@@ -6,6 +6,7 @@ import com.baidu.aip.util.Util;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * 语音相关
@@ -31,9 +32,12 @@ public class Sample {
         // 可选：设置log4j日志输出格式，若不设置，则使用默认配置
         // 也可以直接通过jvm启动参数设置此环境变量
         //System.setProperty("aip.log4j.conf", "path/to/your/log4j.properties");
-
+        HashMap<String, Object> options = new HashMap<String, Object>();
+        options.put("spd", "6");
+        options.put("pit", "5");
+        options.put("per", "0");
         // 调用接口
-        TtsResponse res = client.synthesis(text, "zh", 1, null);
+        TtsResponse res = client.synthesis(text, "zh", 1, options);
         byte[] data = res.getData();
         JSONObject res1 = res.getResult();
         if (data != null) {

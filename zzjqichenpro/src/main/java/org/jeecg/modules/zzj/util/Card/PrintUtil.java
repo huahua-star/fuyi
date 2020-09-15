@@ -94,7 +94,7 @@ public class PrintUtil implements Printable {
             Font font = new Font("宋体", Font.PLAIN, 14);// 创建字体
             Paper p = new Paper();
             g2.setFont(font);
-            p.setSize(235, 235);
+            p.setSize(235, 250);
             p.setImageableArea(10, 10, 100, 141);
             pf.setPaper(p);
             // 打印当前页文本
@@ -127,6 +127,9 @@ public class PrintUtil implements Printable {
             g2.drawString("因响应北京旅店要求,酒店房间未配备一次", 5, 205);
             g2.drawString("性用品,如您需要一次性用品,致电前台/", 5, 220);
             g2.drawString("客服中心(86或6636)酒店服务员会送至客房", 5, 235);
+            font = new Font("宋体", Font.BOLD, 14);// 创建字体
+            g2.setFont(font);
+            g2.drawString("可凭借小票兑换两瓶饮料", 17, 250);
             return Printable.PAGE_EXISTS; // 存在打印页时，继续打印工作
         }catch (Exception e){
             e.printStackTrace();

@@ -150,6 +150,7 @@ public class PayUtil {
         return result;
     }
 
+
     /**
      *  自助机扫描客户出示的付款码付款
      * @param amount  支付金额
@@ -159,11 +160,12 @@ public class PayUtil {
      * @return
      */
     public static String sdkBarcodePay(String amount, String total_amount,
-                                       String authCode, String payChannel, String url, int paytype) throws UnsupportedEncodingException {
+                                       String authCode, String payChannel,
+                                       String url, int paytype,String ConfirmNo) throws UnsupportedEncodingException {
         Map<String, String> paramMap=new HashMap<>();
-        BigDecimal amountBig=new BigDecimal(amount).multiply(new BigDecimal(100));
+        BigDecimal amountBig=(new BigDecimal(Double.valueOf(amount)).setScale(2,BigDecimal.ROUND_HALF_UP)).multiply(new BigDecimal(100));
         System.out.println("amountBig:"+amountBig);
-        BigDecimal total_amountBig=new BigDecimal(total_amount).multiply(new BigDecimal(100));
+        BigDecimal total_amountBig=(new BigDecimal(Double.valueOf(total_amount)).setScale(2,BigDecimal.ROUND_HALF_UP)).multiply(new BigDecimal(100));
         System.out.println("total_amountBig:"+total_amountBig);
         if (amountBig.toString().contains(".")){
             paramMap.put("amount",amountBig.toString().substring(0,amountBig.toString().length()-3));
@@ -175,6 +177,7 @@ public class PayUtil {
         }else{
             paramMap.put("total_amount",total_amountBig.toString().substring(0,total_amountBig.toString().length()));
         }
+        paramMap.put("goods_tag",ConfirmNo);
         paramMap.put("authCode",authCode);
         paramMap.put("payChannel",payChannel);
         paramMap.put("opSys",opSys);//windows sdk
@@ -196,10 +199,10 @@ public class PayUtil {
         System.out.println("param:"+param);
         String returnResult=sendPost(url,param,tradeNo,signValue,txnTime,paytype==0?ordinaryVersion:preVersion);
         System.out.println("returnResult:"+returnResult);
-        /*JSONObject jsonObj = JSONObject.parseObject(returnResult);
+        JSONObject jsonObj = JSONObject.parseObject(returnResult);
         String message = jsonObj.get("message").toString();
         message=URLDecoder.decode(message,"UTF-8");
-        System.out.println("message:"+message);*/
+        System.out.println("message:"+message);
         return returnResult;
     }
     /**
@@ -234,6 +237,7 @@ public class PayUtil {
         JSONObject jsonObj = JSONObject.parseObject(returnResult);
         String message = jsonObj.get("message").toString();
         message= URLDecoder.decode(message,"UTF-8");
+        System.out.println("message:"+message);
         String returnCode=jsonObj.get("returnCode").toString();
         String result=jsonObj.get("result").toString();// 值 :  S-交易成功F-交易失败A-等待授权Z-交易未知D-订单已撤销
         Map<String, String> returnMap=new HashMap<>();
@@ -249,13 +253,20 @@ public class PayUtil {
      * @param orderNo  支付渠道的订单号
      * @return
      */
-    public static Map sdkRefundBarcodePay(String orderNo) throws UnsupportedEncodingException {
+    public static Map sdkRefundBarcodePay(String orderNo,String amount) throws UnsupportedEncodingException {
+
+        BigDecimal txnAmt=(new BigDecimal(Double.valueOf(amount)).setScale(2,BigDecimal.ROUND_HALF_UP)).multiply(new BigDecimal(100));
         Map<String, String> paramMap=new HashMap<>();
         paramMap.put("orderNo",orderNo);
         paramMap.put("opSys",opSys);//windows sdk
         paramMap.put("characterSet",characterSet);
         paramMap.put("orgNo",orgNo);
         paramMap.put("mercId",mercId);
+        if (txnAmt.toString().contains(".")){
+            paramMap.put("txnAmt",txnAmt.toString().substring(0,txnAmt.toString().length()-3));
+        }else{
+            paramMap.put("txnAmt",txnAmt.toString().substring(0,txnAmt.toString().length()));
+        }
         paramMap.put("trmNo",trmNo);
         String txnTime=new SimpleDateFormat("yyyyMMddhhmmss").format(new Date());
         paramMap.put("txnTime",txnTime);
@@ -272,18 +283,22 @@ public class PayUtil {
         String param="{"+getMapToString(paramMap)+"}";
         System.out.println("param:"+param);
         //String returnResult=sendPost("http://sandbox.starpos.com.cn/adpweb/ehpspos3/sdkRefundBarcodePay.json",param,tradeNo,signValue,txnTime,tuikuanVersion);
-        String returnResult=sendPost(tuikuanUrl+"sdkRefundBarcodePay.json",param,tradeNo,signValue,txnTime,tuikuanVersion);
+        String sdkRefundBarcodePayUrl=tuikuanUrl+"sdkRefundBarcodePay.json";
+        System.out.println("url:"+sdkRefundBarcodePayUrl);
+        String returnResult=sendPost(sdkRefundBarcodePayUrl,param,tradeNo,signValue,txnTime,tuikuanVersion);
         //String returnResult=sendPost(gongyongurl+"sdkRefundBarcodePay.json",param,tradeNo,signValue,txnTime,tuikuanVersion);
         System.out.println("returnResult:"+returnResult);
         JSONObject jsonObj = JSONObject.parseObject(returnResult);
         String message = jsonObj.get("message").toString();
         message= URLDecoder.decode(message,"UTF-8");
+        String logNo=jsonObj.get("logNo").toString();
         String returnCode=jsonObj.get("returnCode").toString();
         String result=jsonObj.get("result").toString();// 值 :  S-交易成功F-交易失败A-等待授权Z-交易未知D-订单已撤销
         Map<String, String> returnMap=new HashMap<>();
         returnMap.put("message",message);
         returnMap.put("returnCode",returnCode);
         returnMap.put("result",result);
+        returnMap.put("logNo",logNo);
         return returnMap;
     }
 
@@ -295,7 +310,7 @@ public class PayUtil {
     public static Map sdkCompleteEmp(String orderNo, String txnAmt) throws UnsupportedEncodingException {
         Map<String, String> paramMap=new HashMap<>();
         paramMap.put("orderNo",orderNo);
-        txnAmt=(new BigDecimal(txnAmt).multiply(new BigDecimal(100))).toString();
+        txnAmt=((new BigDecimal(Double.valueOf(txnAmt)).setScale(2,BigDecimal.ROUND_HALF_UP)).multiply(new BigDecimal(100))).toString();
         if (txnAmt.contains(".")){
             paramMap.put("txnAmt",txnAmt.substring(0,txnAmt.length()-3));
         }else{
@@ -327,9 +342,11 @@ public class PayUtil {
         JSONObject jsonObj = JSONObject.parseObject(returnResult);
         String message = jsonObj.get("message").toString();
         message= URLDecoder.decode(message,"UTF-8");
+        String logNo=jsonObj.get("logNo").toString();
         String returnCode=jsonObj.get("returnCode").toString();
         String result=jsonObj.get("result").toString();// 值 :  S-交易成功F-交易失败A-等待授权Z-交易未知D-订单已撤销
         Map<String, String> returnMap=new HashMap<>();
+        returnMap.put("logNo",logNo);
         returnMap.put("message",message);
         returnMap.put("returnCode",returnCode);
         returnMap.put("result",result);
@@ -342,7 +359,7 @@ public class PayUtil {
     public static Map sdkEmpCancel(String orderNo, String txnAmt) throws UnsupportedEncodingException {
         Map<String, String> paramMap=new HashMap<>();
         paramMap.put("orderNo",orderNo);
-        txnAmt=(new BigDecimal(txnAmt).multiply(new BigDecimal(100))).toString();
+        txnAmt=((new BigDecimal(Double.valueOf(txnAmt)).setScale(2,BigDecimal.ROUND_HALF_UP)).multiply(new BigDecimal(100))).toString();
         if (txnAmt.contains(".")){
             paramMap.put("txnAmt",txnAmt.substring(0,txnAmt.length()-3));
         }else{
@@ -376,10 +393,12 @@ public class PayUtil {
         message= URLDecoder.decode(message,"UTF-8");
         String returnCode=jsonObj.get("returnCode").toString();
         String result=jsonObj.get("result").toString();// 值 :  S-交易成功F-交易失败A-等待授权Z-交易未知D-订单已撤销
+        String logNo=jsonObj.get("logNo").toString();
         Map<String, String> returnMap=new HashMap<>();
         returnMap.put("message",message);
         returnMap.put("returnCode",returnCode);
         returnMap.put("result",result);
+        returnMap.put("logNo",logNo);
         return returnMap;
     }
 
@@ -390,7 +409,7 @@ public class PayUtil {
     public static Map sdkComEmpCancel(String orderNo, String txnAmt) throws UnsupportedEncodingException {
         Map<String, String> paramMap=new HashMap<>();
         paramMap.put("orderNo",orderNo);
-        txnAmt=(new BigDecimal(txnAmt).multiply(new BigDecimal(100))).toString();
+        txnAmt=((new BigDecimal(Double.valueOf(txnAmt)).setScale(2,BigDecimal.ROUND_HALF_UP)).multiply(new BigDecimal(100))).toString();
         if (txnAmt.contains(".")){
             paramMap.put("txnAmt",txnAmt.substring(0,txnAmt.length()-3));
         }else{
@@ -422,11 +441,13 @@ public class PayUtil {
         String message = jsonObj.get("message").toString();
         message= URLDecoder.decode(message,"UTF-8");
         String returnCode=jsonObj.get("returnCode").toString();
+        String logNo=jsonObj.get("logNo").toString();
         String result=jsonObj.get("result").toString();// 值 :  S-交易成功F-交易失败A-等待授权Z-交易未知D-订单已撤销
         Map<String, String> returnMap=new HashMap<>();
         returnMap.put("message",message);
         returnMap.put("returnCode",returnCode);
         returnMap.put("result",result);
+        returnMap.put("logNo",logNo);
         return returnMap;
     }
     /**

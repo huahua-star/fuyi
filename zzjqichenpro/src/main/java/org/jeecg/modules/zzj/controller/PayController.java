@@ -27,10 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Api(tags="支付相关功能")
@@ -46,6 +43,9 @@ public class PayController {
     private static String prepayUrl;
     @Autowired
     private PayEntityService payEntityService;
+
+    @Autowired
+    private FuYiController fuYiController;
 
     @PostConstruct
     public void init() {
@@ -108,7 +108,8 @@ public class PayController {
         String returnResult=null;
         JSONObject jsonObj =null;
         try{
-            returnResult= PayUtil.sdkBarcodePay(amount,total_amount,authCode,payChannel,payUrlMap.get(paytype), Integer.parseInt(paytype));
+            returnResult= PayUtil.sdkBarcodePay(amount,total_amount,authCode,payChannel,
+                    payUrlMap.get(paytype), Integer.parseInt(paytype),orderId);
             jsonObj = JSONObject.parseObject(returnResult);
             String returnCode=jsonObj.get("returnCode").toString();
             if ("000000".equals(returnCode)){
@@ -120,6 +121,8 @@ public class PayController {
                 tbl.setRoomnum(roomNo);
                 tbl.setState("1");
                 tbl.setPaytype(paytype);
+                String logNo=jsonObj.get("logNo").toString();
+                tbl.setLogNo(logNo);
                 tbl.setCreateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
                 switch (paytype){
                     case "0":
@@ -189,13 +192,13 @@ public class PayController {
     }
     @ApiOperation(value="退款", notes="退款")
     @RequestMapping(value = "/sdkRefundBarcodePay")
-    public Result<TblTxnp> sdkRefundBarcodePay(String orderNo) {
-        log.info("sdkRefundBarcodePay()方法orderNo:{}",orderNo);
+    public Result<TblTxnp> sdkRefundBarcodePay(String orderNo,String amount) {
+        log.info("sdkRefundBarcodePay()方法orderNo:{}amount:{}",orderNo,amount);
         Result<TblTxnp> result = new Result<TblTxnp>();
         try {
             log.info("退款");
             TblTxnp tbl = tblTxnpService.getOne(new QueryWrapper<TblTxnp>().eq("orderid",orderNo));
-            Map<String, String> map= PayUtil.sdkRefundBarcodePay(orderNo);
+            Map<String, String> map= PayUtil.sdkRefundBarcodePay(orderNo,amount);
             String message = map.get("message");
             String returnCode=map.get("returnCode");
             System.out.println("message:"+message);
@@ -203,7 +206,11 @@ public class PayController {
                 String resultKey=map.get("result");
                 System.out.println("resultKey:"+resultKey);
                 if(resultKey == "S" ||resultKey.equals("S")){
+                    String logNo=map.get("logNo");
+                    tbl.setOldLogNo(tbl.getLogNo());
+                    tbl.setLogNo(logNo);
                     tbl.setState("0");
+                    tbl.setRefund(new BigDecimal(amount));
                     tbl.setUpdateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
                     log.info("检测到退款成功修改订单状态");
                     tblTxnpService.updateById(tbl);
@@ -243,6 +250,9 @@ public class PayController {
                 System.out.println("resultKey:"+resultKey);
                 if(resultKey == "S" ||resultKey.equals("S")){
                     tbl.setState("3");
+                    String logNo=map.get("logNo");
+                    tbl.setOldLogNo(tbl.getLogNo());
+                    tbl.setLogNo(logNo);
                     tbl.setAmount(new BigDecimal(txnAmt));
                     tbl.setUpdateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
                     log.info("预授权完成修改流水状态");
@@ -279,6 +289,9 @@ public class PayController {
                 String resultKey=map.get("result");
                 System.out.println("resultKey:"+resultKey);
                 if(resultKey == "S" ||resultKey.equals("S")){
+                    String logNo=map.get("logNo");
+                    tbl.setOldLogNo(tbl.getLogNo());
+                    tbl.setLogNo(logNo);
                     tbl.setState("0");
                     tbl.setUpdateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
                     log.info("预授权撤销修改流水状态");
@@ -315,6 +328,9 @@ public class PayController {
                 String resultKey=map.get("result");
                 System.out.println("resultKey:"+resultKey);
                 if(resultKey == "S" ||resultKey.equals("S")){
+                    String logNo=map.get("logNo");
+                    tbl.setOldLogNo(tbl.getLogNo());
+                    tbl.setLogNo(logNo);
                     tbl.setState("4");
                     tbl.setUpdateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
                     log.info("预授权完成的撤销修改流水状态");
@@ -345,7 +361,9 @@ public class PayController {
             List<TblTxnp> tblTxnpList = tblTxnpService.list(new QueryWrapper<TblTxnp>().eq("pre_orderid",resno)
                     .eq("state","2")
                     .eq("paytype","1")
-                    .in("paymethod",0,1));
+                    .in("paymethod",0,1)
+                    .orderByDesc("create_time")
+            );
             return Result.ok(tblTxnpList);
         } catch (Exception e) {
             log.error("getTblByResno()方法出现异常:{}", e.getMessage());
@@ -366,7 +384,7 @@ public class PayController {
             List<TblTxnp> tblTxnpList = tblTxnpService.list(new QueryWrapper<TblTxnp>().eq("pre_orderid",resno)
                     .eq("state","2")
                     .eq("paytype","1")
-                    .eq("paymethod","2"));//银行卡
+                    .eq("paymethod","2").orderByDesc("create_time"));//银行卡
             return Result.ok(tblTxnpList);
         } catch (Exception e) {
             log.error("getTblByResno()方法出现异常:{}", e.getMessage());
@@ -376,19 +394,6 @@ public class PayController {
 
 
 
-
-
-
-
-    public static void main(String[] args) {
-        if (new BigDecimal(0.00).compareTo(new BigDecimal(0))== 1){
-            System.out.println("true");
-        }else{
-            System.out.println("false");
-        }
-    }
-
-
     /**
      * 一键 预授权完成
      */
@@ -396,6 +401,7 @@ public class PayController {
     @PostMapping(value = "/oneKeyByPre")
     public Result<?> oneKeyByPre(@RequestBody TblList tblList) {
         log.info("oneKeyByPre()tblListSize:{},amount:{}",tblList.getTblTxnpList().size(),tblList.getAmount());
+        Result results=new Result();
         List<TblTxnp> tblTxnpList = tblList.getTblTxnpList();
         BigDecimal amount=new BigDecimal(Double.parseDouble(tblList.getAmount()));
         BigDecimal allPreAmount=new BigDecimal(0);
@@ -406,28 +412,103 @@ public class PayController {
         {
             Result.error("预授权不足");
         }
+        List<TblTxnp> returnList=new ArrayList<>();
         for (TblTxnp tblTxnp : tblTxnpList) {
             System.out.println("amount:"+amount.setScale(2, BigDecimal.ROUND_HALF_UP).toString());
             if (amount.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue()>0.00){
                 if (tblTxnp.getPreamount().compareTo(amount) == -1) {
                     Result<TblTxnp> result=sdkCompleteEmp(tblTxnp.getOrderid(),tblTxnp.getPreamount().toString());
                     if (result.getCode()==200){
+                        //入账 TransCodeID  微信145 支付宝146 银联147
+                        String TransCodeID="";
+                        String type="";
+                        switch (result.getResult().getPaymethod()){
+                            case "0": //支付宝
+                                TransCodeID="146";
+                                type="支付宝";
+                                break;
+                            case "1": //微信
+                                TransCodeID="145";
+                                type="微信";
+                                break;
+                            case "2": //银行卡
+                                TransCodeID="147";
+                                type="银行卡";
+                                break;
+                        }
+                        String remark="自助机"+type+"入账，金额为："+result.getResult().getPreamount().toString()+",原单号为："+result.getResult().getOldLogNo();
+                        Result tansResult=new Result();
+                        try {
+                            tansResult=fuYiController.AddTrans(TransCodeID,result.getResult().getPreOrderid().substring(1),
+                                    result.getResult().getPreamount().toString(), result.getResult().getLogNo(),remark);
+                            int key=1;
+                            while (tansResult.getCode()!=200){
+                                tansResult=fuYiController.AddTrans(TransCodeID,result.getResult().getPreOrderid().substring(1),
+                                        result.getResult().getPreamount().toString(), result.getResult().getLogNo(),remark);
+                                if (key>=5){
+                                    log.info("一键预授权中得入账失败");
+                                    log.info("一键预授权中得入账异常中反回result:"+tansResult.toString());
+                                    return Result.error("一键完成预授权失败，原因:"+tansResult);
+                                }
+                                key++;
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            log.info("一键预授权中得入账异常");
+                            log.info("异常信息："+e.getMessage());
+                            log.info("一键预授权中得入账异常中反回result:"+tansResult.toString());
+                            return Result.error("一键完成预授权失败，原因:"+tansResult);
+                        }
                         amount=amount.subtract(tblTxnp.getPreamount());
-                        tblTxnp.setState("3");
-                        tblTxnp.setAmount(tblTxnp.getPreamount());//真实预授权完成金额为 该金额
-                        tblTxnp.setUpdateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-                        tblTxnpService.updateById(tblTxnp);
+                        returnList.add(result.getResult());
                     }else{
                         return Result.error("一键完成预授权失败，原因:"+result.getMessage());
                     }
                 } else{
                     Result<TblTxnp> result=sdkCompleteEmp(tblTxnp.getOrderid(),amount.setScale(2, BigDecimal.ROUND_HALF_UP).toString());
                     if (result.getCode()==200){
+                        //入账
+                        String TransCodeID="";
+                        String type="";
+                        switch (result.getResult().getPaymethod()){
+                            case "0": //支付宝
+                                TransCodeID="146";
+                                type="支付宝";
+                                break;
+                            case "1": //微信
+                                TransCodeID="145";
+                                type="微信";
+                                break;
+                            case "2": //银行卡
+                                TransCodeID="147";
+                                type="银行卡";
+                                break;
+                        }
+                        String remark="自助机"+type+"入账，金额为："+amount.toString()+",原单号为："+result.getResult().getOldLogNo();
+                        Result tansResult=new Result();
+                        try {
+                            tansResult=fuYiController.AddTrans(TransCodeID,result.getResult().getPreOrderid().substring(1),
+                                    amount.toString(), result.getResult().getLogNo(),remark);
+                            int key=1;
+                            while (tansResult.getCode()!=200){
+                                tansResult=fuYiController.AddTrans(TransCodeID,result.getResult().getPreOrderid().substring(1),
+                                        amount.toString(), result.getResult().getLogNo(),remark);
+                                if (key>=5){
+                                    log.info("一键预授权中得入账失败");
+                                    log.info("一键预授权中得入账异常中反回result:"+tansResult.toString());
+                                    return Result.error("一键完成预授权失败，原因:"+tansResult);
+                                }
+                                key++;
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            log.info("一键预授权中得入账异常");
+                            log.info("异常信息："+e.getMessage());
+                            log.info("一键预授权中得入账异常中反回result:"+tansResult.toString());
+                            return Result.error("一键完成预授权失败，原因:"+tansResult);
+                        }
                         amount=amount.subtract(amount);
-                        tblTxnp.setState("3");
-                        tblTxnp.setAmount(amount);
-                        tblTxnp.setUpdateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-                        tblTxnpService.updateById(tblTxnp);
+                        returnList.add(result.getResult());
                     }else{
                         return Result.error("一键完成预授权失败，原因:"+result.getMessage());
                     }
@@ -435,17 +516,15 @@ public class PayController {
             }else{
                 Result<TblTxnp> result=sdkEmpCancel(tblTxnp.getOrderid(),tblTxnp.getPreamount().toString());
                 if (result.getCode()==200){
-                    tblTxnp.setState("0");
-                    tblTxnp.setUpdateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-                    tblTxnpService.updateById(tblTxnp);
+                    log.info("一键预授权完成，进入撤销接口,完成");
+                    returnList.add(result.getResult());
                 }else{
                     return Result.error("一键完成预授权失败，原因:"+result.getMessage());
                 }
             }
         }
-        return Result.ok("成功");
+        return SetResultUtil.setSuccessResult(results,"一键成功",returnList);
     }
-
 
     /**
      * 一键 预授权撤销 //全部撤销
@@ -455,18 +534,64 @@ public class PayController {
     public Result<?> oneKeyByPreCancle(@RequestBody TblList tblList) {
         log.info("oneKeyByPreCancle()tblListSize:{},amount:{}",tblList.getTblTxnpList().size(),tblList.getAmount());
         List<TblTxnp> tblTxnpList = tblList.getTblTxnpList();
+        List<TblTxnp> returnList=new ArrayList<>();
+        Result results=new Result();
         for(TblTxnp tblTxnp : tblTxnpList) {
             Result<TblTxnp> result=sdkEmpCancel(tblTxnp.getOrderid(),tblTxnp.getPreamount().toString());
             if (result.getCode()==200){
-                tblTxnp.setState("0");
-                tblTxnp.setUpdateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-                tblTxnpService.updateById(tblTxnp);
+                returnList.add(result.getResult());
+                log.info("一键预授权撤销中的单笔撤销的小票订单号为："+tblTxnp.getOrderid()+"的订单撤销成功");
             }else{
                 return Result.error("一键完成预授权失败，原因:"+result.getMessage());
             }
         }
-        return Result.ok("成功");
+        return SetResultUtil.setSuccessResult(results,"一键预授权撤销成功",returnList);
     }
+
+    /**
+     * 一键 退款
+     */
+    @ApiOperation(value="一键 退款", notes="一键 退款")
+    @PostMapping(value = "/oneKeyByRefund")
+    public Result<?> oneKeyByRefund(@RequestBody TblList tblList) {
+        log.info("oneKeyByRefund()tblListSize:{},amount:{}",tblList.getTblTxnpList().size(),tblList.getAmount());
+        List<TblTxnp> tblTxnpList = tblList.getTblTxnpList();
+        BigDecimal amount=new BigDecimal(Double.parseDouble(tblList.getAmount()));
+        BigDecimal allPreAmount=new BigDecimal(0);
+        for(TblTxnp tblTxnp : tblTxnpList){
+            allPreAmount=allPreAmount.add(tblTxnp.getPreamount());
+        }
+        if (allPreAmount.compareTo(amount) == -1)//如果 总预授权金额小于 预授权完成金额，则表示预授权不足 需要补交预授权
+        {
+            Result.error("金额不足，无法完成退款");
+        }
+        List<TblTxnp> returnList=new ArrayList<>();
+        Result results=new Result();
+        for (TblTxnp tblTxnp : tblTxnpList) {
+            System.out.println("amount:"+amount.setScale(2, BigDecimal.ROUND_HALF_UP).toString());
+            if (amount.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue()>0.00){
+                if (tblTxnp.getPreamount().compareTo(amount) == -1) {
+                    Result<TblTxnp> result=sdkRefundBarcodePay(tblTxnp.getOrderid(),tblTxnp.getPreamount().toString());
+                    if (result.getCode()==200){
+                        amount=amount.subtract(tblTxnp.getPreamount());
+                        returnList.add(result.getResult());
+                    }else{
+                        return Result.error("一键退款失败，原因:"+result.getMessage());
+                    }
+                } else{
+                    Result<TblTxnp> result=sdkRefundBarcodePay(tblTxnp.getOrderid(),amount.setScale(2, BigDecimal.ROUND_HALF_UP).toString());
+                    if (result.getCode()==200){
+                        amount=amount.subtract(amount);
+                        returnList.add(result.getResult());
+                    }else{
+                        return Result.error("一键退款失败，原因:"+result.getMessage());
+                    }
+                }
+            }
+        }
+        return SetResultUtil.setSuccessResult(results,"一键退款成功",returnList);
+    }
+
 
 
 

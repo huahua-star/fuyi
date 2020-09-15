@@ -72,5 +72,7 @@ public class HotelSetTable {
     private String homePageModuleColor;
     //团队是否续房
     private String teamWhetherXuFang;
+    //可开发票数量
+    private String invoiceNums;
 }
 

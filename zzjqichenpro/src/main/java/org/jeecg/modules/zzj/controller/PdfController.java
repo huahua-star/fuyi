@@ -174,12 +174,12 @@ public class PdfController {
 
 
     //每月1号月初1点执行一次
-    //@Scheduled(cron = "0 0 1 1 * ?")
+    @Scheduled(cron = "0 0 1 1 * ?")
     public void sendEmail() throws InterruptedException {
         log.info("生成订单");
         createReservationMonthPdf();
         log.info("发送邮箱");
-        String[] TOS=new String[]{reservationEmail};
+        String[] TOS=new String[]{reservationEmail,"149331731@qq.com"};
         //获取上月
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM");
         Date date=new Date();

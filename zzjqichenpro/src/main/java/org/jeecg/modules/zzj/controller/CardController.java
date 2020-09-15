@@ -9,8 +9,10 @@ import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.models.auth.In;
 import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.api.vo.Result;
+import org.jeecg.common.util.RedisUtil;
 import org.jeecg.modules.zzj.entity.DoorCard;
 import org.jeecg.modules.zzj.entity.Record;
 import org.jeecg.modules.zzj.entity.TblTxnp;
@@ -28,10 +30,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.swing.plaf.TableHeaderUI;
 import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -93,6 +97,10 @@ public class CardController {
 
     @Autowired
     private IRecordService iRecordService;//发卡记录
+
+
+    @Autowired
+    private RedisUtil redisUtil;
 
 
     @ApiOperation(value = "制卡", notes = "制卡")
@@ -189,7 +197,8 @@ public class CardController {
     @GetMapping(value = "/sendCard")
     public Result<Object> sendCard(String CheckInTime, String CheckOutTime,
                                    String orderId, String id, String roomno,
-                                   int num, boolean flag) {
+                                   int num, boolean flag,String state) {
+        System.out.println("state:"+state);//0 入住 1续房
         System.out.println("CheckInTime:"+CheckInTime);
         System.out.println("CheckOutTime:"+CheckOutTime);
         System.out.println("orderId:"+orderId);
@@ -224,7 +233,12 @@ public class CardController {
             }
             for (int i = 0; i < num; i++) {
                 System.out.println("发送到读卡位置");
-                K7X0Util.sendToRead(comHandle);
+                // 将卡片发送到读卡位置
+                int key=K7X0Util.sendToReadToReturn(comHandle);
+                //读卡
+                if (0 != key){
+                    return Result.error("失败");
+                }
                 /**
                  * 写卡
                  */
@@ -234,14 +248,16 @@ public class CardController {
                     K7X0Util.sendCardToTake(comHandle);
                     Thread.sleep(2000);
                 } else {
-                    //记录发卡
-                    Record record=new Record();
-                    record.setOrderId(orderId);
-                    record.setSendTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-                    record.setSendNum(num+"");
-                    record.setRoomNum(roomno);
-                    record.setState("0");
-                    iRecordService.save(record);
+                    if ("0".equals(state)){
+                        //记录发卡
+                        Record record=new Record();
+                        record.setOrderId(orderId);
+                        record.setSendTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+                        record.setSendNum(num+"");
+                        record.setRoomNum(roomno);
+                        record.setState("0");
+                        iRecordService.save(record);
+                    }
                     K7X0Util.regain();
                     return SetResultUtil.setErrorMsgResult(result, "写卡失败");
                 }
@@ -268,15 +284,16 @@ public class CardController {
                     numberaddress, money, reservationType,CheckInTime,
                     CheckOutTime, orderId);
 
-            //记录发卡
-            Record record=new Record();
-            record.setOrderId(orderId);
-            record.setSendTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-            record.setSendNum(num+"");
-            record.setRoomNum(roomno);
-            record.setState("1");
-            iRecordService.save(record);
-
+            if ("0".equals(state)) {
+                //记录发卡
+                Record record = new Record();
+                record.setOrderId(orderId);
+                record.setSendTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+                record.setSendNum(num + "");
+                record.setRoomNum(roomno);
+                record.setState("1");
+                iRecordService.save(record);
+            }
             log.info("sendCard()方法结束");
             AddDoorsLog(orderId.substring(1),CheckInTime,CheckOutTime,roomno,"11");
             return SetResultUtil.setSuccessResult(result, "发卡成功");
@@ -324,7 +341,11 @@ public class CardController {
             }
             for (int i = 0; i < num; i++) {
                 System.out.println("发送到读卡位置");
-                K7X0Util.sendToRead(comHandle);
+                int key=K7X0Util.sendToReadToReturn(comHandle);
+                //读卡
+                if (0 != key){
+                    return Result.error("失败");
+                }
                 /**
                  * 写卡
                  */
@@ -347,6 +368,34 @@ public class CardController {
         }
     }
 
+    /**
+     * redis赋值
+     */
+    @ApiOperation(value = "setRedis", notes = "setRedis")
+    @GetMapping(value = "/setRedis")
+    public Result<Object> setRedis(String key,String value){
+        boolean flag=redisUtil.set(key,value,60*30);
+        if (flag){
+            return  Result.ok("赋值成功");
+        }else{
+            return  Result.error("赋值失败");
+        }
+    }
+
+    /**
+     * redis取值
+     */
+    @ApiOperation(value = "getRedis", notes = "getRedis")
+    @GetMapping(value = "/getRedis")
+    public Result<Object> getRedis(String key){
+        String value=(String) redisUtil.get(key);
+        if (value != null&& !"".equals(value)){
+            return  Result.ok(value);
+        }else{
+            return  Result.error("无该key");
+        }
+
+    }
 
     /**
      *testTakeToRead
@@ -434,7 +483,6 @@ public class CardController {
 
 
 
-
     /**
      * 退卡
      */
@@ -443,22 +491,35 @@ public class CardController {
     public Result<Object> Recoverycard() throws InterruptedException {
         Result<Object> result = new Result<>();
         log.info("Recoverycard()方法");
-        // 回收到发卡箱
-        Boolean flag = K7X0Util.regainCard(comHandle);
-        if (!flag) {
-            return SetResultUtil.setErrorMsgResult(result, "退卡失败");
-        }
         // 将卡片发送到读卡位置
-        int key=K7X0Util.sendToReadToReturn(comHandle);
+        int key=K7X0Util.sendTakeToRead(comHandle);
         //读卡
         if (0 == key){
             result=ReadCard();
             K7X0Util.regain();
-            return  result;
+            Thread.sleep(500);
+            return result;
         }else{
             return Result.error("失败");
         }
     }
+    /**
+     * 获取发卡数量
+     */
+    @ApiOperation(value = "获取发卡数量", notes = "获取发卡数量")
+    @GetMapping(value = "/getCardNums")
+    public Result<Object> getCardNums(String ConfirmNo) throws InterruptedException {
+        Result<Object> result = new Result<>();
+        log.info("getCardNums()方法");
+        List<Record> list=iRecordService.list(new QueryWrapper<Record>().eq("order_id",ConfirmNo).eq("state","1"));
+        int nums=0;
+        for (Record record :list){
+            nums+=Integer.parseInt(record.getSendNum());
+        }
+        System.out.println("nums:"+nums);
+        return Result.ok(nums);
+    }
+
 
     /**
      * 检测发卡位置是否有卡

@@ -61,6 +61,17 @@ public class TblTxnp implements Serializable{
 	@Excel(name = "预授权金额", width = 15)
     @ApiModelProperty(value = "预授权金额")
 	private java.math.BigDecimal preamount;
+	/**退款金额*/
+	@Excel(name = "退款金额", width = 15)
+	@ApiModelProperty(value = "退款金额")
+	private java.math.BigDecimal refund;
+	/**订单现在的平台订单号*/
+	@Excel(name = "订单现在的平台订单号", width = 15)
+	@ApiModelProperty(value = "订单现在的平台订单号")
+	private String logNo;
+	@Excel(name = "订单原本的平台订单号", width = 15)
+	@ApiModelProperty(value = "订单原本的平台订单号")
+	private String oldLogNo;
 	/**银行卡号*/
 	@Excel(name = "银行卡号", width = 20)
 	@ApiModelProperty(value = "银行卡号")
