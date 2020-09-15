@@ -1,0 +1,116 @@
+spring:
+  profiles:
+    active: dev
+#    active: master
+swagger:
+  production: false
+  basic:
+    enable: false
+    username: jeecg
+    password: jeecg1314
+
+#sdk 发卡机 串口
+sdk:
+  ComHandle: 3
+#  ComHandle: 2
+#读卡器  串口
+sdk1:
+  ComHandle: 7
+
+admin:
+  adress: http://10.129.6.250:8090/roomimg/getImages?path=
+qrDir: D:/
+
+
+fuyi:
+  #appKey: zgczzj
+  appKey: zgczzj
+  #appSecret: fx1234
+  appSecret: fx561234
+  MobileNo: 15549560175
+  Password: fx1234
+  HotelNo: PEKZGC
+
+print:
+  wifiname: zysz
+  wifipass: 88888888
+  hotelname: 凯莱酒店
+  phone: 58986688
+  #市 如 北京市
+  cityaddress: 北京市
+  #区  如 大望路
+  areaaddress: 朝阳区
+  #路 如 玉泉路
+  roadaddress: 紫玉东路1号
+  #小区 如安慧北里安园
+  communityaddress: 紫玉山庄
+  # 号  如20号
+  numberaddress: 737
+  #图片路径
+  imgurl: E:\\Thelog\\ceshi.jpg
+
+alipay:
+  apikey: "00014005"
+# 写卡服务地址
+cardUrl: http://127.0.0.1:8888
+
+Invoiqr:
+  #由电子发票平台分配的appCode
+  #appCode: PTTEST17 #测试
+  appCode: PT000097 #生产
+  #调用方纳税人识别号
+  #taxpayerCode: 91370200264807TEST4A  #测试
+  taxpayerCode: 911101087802128982  #生产
+  #证书路径
+  #keyStorePath: D:/PTTEST17.keystore #测试
+  keyStorePath: D:/PT000097.keystore #生产
+  #证书别名
+  #keyStoreAbner: PTTEST17 #测试
+  keyStoreAbner: 9hnjuy # 生产
+  #证书密码
+  #keyStorePassWord: PTTEST17  #测试
+  keyStorePassWord: gst6ybgs  #生产
+  #发票接口
+  #facadeUrl: https://www.chinaeinv.com:943/igs/api/orderApi.jspa  #测试
+  facadeUrl: https://www.chinaeinv.com/igs/api/orderApi.jspa  #生产
+
+
+unionpay:
+  #银商平台接口地址
+  url: https://qr-test2.chinaums.com/netpay-route-server/api/
+  #商户号
+  mid: 898340149000005
+  #终端号
+  tid: 88880001
+  #机构商户号
+  instMid: QRPAYDEFAULT
+  #来源系统
+  msgSrc: WWW.TEST.COM
+  #通讯秘钥
+  key: fcAmtnx7MwismjWNhNKdHC44mNXtnEQeJkRrhKJwyrW2ysRR
+
+#fuyi请求地址
+#fuyiaddress: http://47.75.119.166:8066/webapinew
+#fuyiaddress: http://192.168.48.32:8066/webapinew
+fuyiaddress: http://39.96.76.74:8081/WebApiNew
+
+
+logoimgUrl: D:\\bill\\fuyilogo.jpg
+pdfUrl: D:\\bill\\
+reservationMonthUrl: D:\\reservation\\
+operRecordMonthUrl: D:\\operrecord\\
+
+Email:
+  #个人HOST
+  HOST: smtp.163.com
+  #企业HOST
+  #HOST: smtphz.qiye.163.com
+  FROM: 18749195329@163.com
+  USER: 18749195329@163.com
+  PWD: hejiahua182018
+  SUBJECT: 帐单（Folio）
+  AFFIXNAME: pdf.pdf
+  cardEmail: 570148135@qq.com
+  #cardEmail: 1005454850@qq.com
+  #reservationEmail: 570148135@qq.com
+  reservationEmail: 1005454850@qq.com
