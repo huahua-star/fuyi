@@ -105,9 +105,9 @@ Email:
   HOST: smtp.163.com
   #企业HOST
   #HOST: smtphz.qiye.163.com
-  FROM: 18749195329@163.com
-  USER: 18749195329@163.com
-  PWD: hejiahua182018
+  FROM: chunshangzzj@163.com
+  USER: chunshangzzj@163.com
+  PWD: VKERLWISVDJMGNUG
   SUBJECT: 帐单（Folio）
   AFFIXNAME: pdf.pdf
   cardEmail: 570148135@qq.com

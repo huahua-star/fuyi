@@ -195,6 +195,21 @@ public class PdfController {
         filePath=operRecordMonthUrl+fileName;
         EmailUtil.send(format.format(date)+"月自助机订单统计",HOST,FROM,filePath,fileName,USER,PWD,format.format(date)+"月自助机操作记录统计",TOS);
     }
+    /*
+     * 生成自助机每月生成操作记录pdf
+     */
+    @ApiOperation(value = "test")
+    @RequestMapping(value = "/test", method = RequestMethod.GET)
+    public Result<?> test() {
+        //String TO="longxikefang2020@163.com";
+        String TO="570148135@qq.com";
+        String[] TOS=TO.split(",");
+        EmailUtil.send("账号为"+"123"+"，房间号为123的客人已在自助机上办理退房。",
+                HOST,FROM,"",AFFIXNAME,USER,PWD,"客人退房提醒。",TOS);
+        return Result.ok("成功");
+    }
+
+
     public static String getStatus(String status){
         Map<String,String> map=new HashMap<>();
         map.put("I","在住");
